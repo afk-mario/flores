@@ -1,0 +1,13 @@
+{
+  "name": "g_ui",
+  "prefix": "G_UI_",
+  "columns": ["id", "label"],
+  "elements": [
+    "ACCEPT",
+    "BACK",
+    "LEFT",
+    "RIGHT",
+    "UP",
+    "DOWN",
+  ]
+}

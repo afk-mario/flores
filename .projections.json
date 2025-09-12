@@ -1,0 +1,8 @@
+{
+  "*.c": { "alternate": "{}.h" },
+  "*.h": { "alternate": "{}.c" },
+  "*": {
+    "make": "make pd_build_sim DEBUG=1 CDEFS=-DSYS_LOG_LEVEL=3",
+    "dispatch": "make pd_run DEBUG=1 CDEFS=-DSYS_LOG_LEVEL=3"
+  }
+}

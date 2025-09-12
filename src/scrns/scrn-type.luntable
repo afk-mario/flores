@@ -1,0 +1,12 @@
+{
+  "name": "scrn_type",
+  "prefix": "SCRN_TYPE_",
+  "columns": ["id", "label"],
+  "elements": [
+    "LOADING",
+    "TITLE",
+    "GAME",
+    "TEST",
+  ]
+}
+

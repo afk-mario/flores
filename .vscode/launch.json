@@ -1,0 +1,203 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "(gdb) Launch",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${env:PLAYDATE_SDK_PATH}/bin/PlaydateSimulator",
+      "args": ["${workspaceFolder}/build/playdate/flores.pdx"],
+      "additionalSOLibSearchPath": "${workspaceFolder}/build/playdate",
+      "stopAtEntry": false,
+      "cwd": "${workspaceFolder}/build/playdate",
+      "environment": [
+        {
+          "name": "LD_PRELOAD",
+          "value": "/usr/lib/libasan.so"
+        }
+      ],
+      "externalConsole": false,
+      "MIMode": "gdb",
+      "setupCommands": [
+        {
+          "description": "Enable pretty-printing for gdb",
+          "text": "-enable-pretty-printing",
+          "ignoreFailures": true
+        },
+        {
+          "description": "Set Disassembly Flavor to Intel",
+          "text": "-gdb-set disassembly-flavor intel",
+          "ignoreFailures": true
+        }
+      ]
+    },
+    {
+      "name": "(gdb) Linux Launch",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/build/linux/flores.bin",
+      "args": [],
+      "stopAtEntry": false,
+      "cwd": "${workspaceFolder}/build/linux",
+      "environment": [
+        {
+          "name": "LD_PRELOAD",
+          "value": "/usr/lib/libasan.so"
+        }
+      ],
+      "externalConsole": false,
+      "MIMode": "gdb",
+      "setupCommands": [
+        {
+          "description": "Enable pretty-printing for gdb",
+          "text": "-enable-pretty-printing",
+          "ignoreFailures": true
+        },
+        {
+          "description": "Set Disassembly Flavor to Intel",
+          "text": "-gdb-set disassembly-flavor intel",
+          "ignoreFailures": true
+        }
+      ]
+    },
+    {
+      "name": "(gdb) Assets gen",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/bin/luna-asset-gen",
+      "args": ["./src/assets", "./tmp"],
+      "stopAtEntry": true,
+      "cwd": "${workspaceFolder}",
+      "environment": [
+        {
+          "name": "LD_PRELOAD",
+          "value": "/usr/lib/libasan.so"
+        }
+      ],
+      "externalConsole": false,
+      "MIMode": "gdb",
+      "setupCommands": [
+        {
+          "description": "Enable pretty-printing for gdb",
+          "text": "-enable-pretty-printing",
+          "ignoreFailures": true
+        },
+        {
+          "description": "Set Disassembly Flavor to Intel",
+          "text": "-gdb-set disassembly-flavor intel",
+          "ignoreFailures": true
+        }
+      ]
+    },
+    {
+      "name": "(lldb) Assets gen",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/bin/luna-asset-gen",
+      "args": ["./src/assets", "./tmp"],
+      "stopAtEntry": true,
+      "cwd": "${workspaceFolder}",
+      "environment": [
+        {
+          "name": "LD_PRELOAD",
+          "value": "/usr/lib/libasan.so"
+        }
+      ],
+      "externalConsole": false,
+      "MIMode": "lldb"
+    },
+    {
+      "name": "(gdb) Meta gen",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/bin/luna-meta-gen",
+      "args": ["./"],
+      "stopAtEntry": true,
+      "cwd": "${workspaceFolder}",
+      "environment": [
+        {
+          "name": "LD_PRELOAD",
+          "value": "/usr/lib/libasan.so"
+        }
+      ],
+      "externalConsole": false,
+      "MIMode": "gdb",
+      "setupCommands": [
+        {
+          "description": "Enable pretty-printing for gdb",
+          "text": "-enable-pretty-printing",
+          "ignoreFailures": true
+        },
+        {
+          "description": "Set Disassembly Flavor to Intel",
+          "text": "-gdb-set disassembly-flavor intel",
+          "ignoreFailures": true
+        }
+      ]
+    },
+    {
+      "name": "(gdb) Poly",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/poly-build/linux/poly.bin",
+      "args": [],
+      "stopAtEntry": false,
+      "cwd": "${workspaceFolder}/poly-build/linux/",
+      "environment": [
+        {
+          "name": "LD_PRELOAD",
+          "value": "/usr/lib/libasan.so"
+        }
+      ],
+      "externalConsole": false,
+      "MIMode": "gdb",
+      "setupCommands": [
+        {
+          "description": "Enable pretty-printing for gdb",
+          "text": "-enable-pretty-printing",
+          "ignoreFailures": true
+        },
+        {
+          "description": "Set Disassembly Flavor to Intel",
+          "text": "-gdb-set disassembly-flavor intel",
+          "ignoreFailures": true
+        }
+      ]
+    },
+    {
+      "name": "(lldb) Launch",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${env:PLAYDATE_SDK_PATH}/bin/PlaydateSimulator",
+      "osx": {
+        "program": "${env:PLAYDATE_SDK_PATH}/bin/Playdate Simulator.app"
+      },
+      "args": ["${workspaceFolder}/build/playdate/flores.pdx"],
+      "cwd": "${workspaceFolder}/build/playdate",
+      "additionalSOLibSearchPath": "${workspaceFolder}/build/playdate",
+      "stopAtEntry": false,
+      "environment": [],
+      "externalConsole": false,
+      "MIMode": "lldb"
+    },
+    {
+      "name": "(lldb) MacOS Launch",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/build/macos/flores.app",
+      "args": [],
+      "stopAtEntry": false,
+      "cwd": "${workspaceFolder}/build/macos",
+      "additionalSOLibSearchPath": "${workspaceFolder}/build/macos",
+      "environment": [
+        {
+          "name": "LD_PRELOAD",
+          "value": "/usr/lib/libasan.so"
+        }
+      ],
+      "externalConsole": false,
+      "MIMode": "lldb"
+    }
+  ]
+}
+

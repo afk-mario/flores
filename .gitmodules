@@ -1,0 +1,3 @@
+[submodule "luna"]
+	path = luna
+	url = git@github.com:amano-games/luna.git
