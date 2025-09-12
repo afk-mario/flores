@@ -1,10 +1,10 @@
 #include "scrn-loading.h"
 #include "app/app-data.h"
 #include "app/app.h"
+#include "base/arr.h"
 #include "base/trace.h"
 #include "base/utils.h"
 #include "engine/assets/assets.h"
-#include "engine/gfx/gfx-defs.h"
 #include "globals/g-fnt-refs.h"
 #include "globals/g-gfx.h"
 #include "globals/g-mus-refs.h"
@@ -18,9 +18,7 @@ void
 scrn_loading_ini(struct app *app)
 {
 	struct scrn_loading *scrn = &app->scrn_loading;
-	struct gfx_ctx ctx        = gfx_ctx_display();
 	struct alloc alloc        = app->alloc_transient;
-	tex_clr(ctx.dst, GFX_COL_BLACK);
 
 	{
 		scrn->loadings = SCRN_LOADING_FUNCS;
@@ -262,4 +260,47 @@ scrn_loading_push_paths(struct loading_state *state, f32 time_start, f32 time_ma
 
 	b32 res = state->loaded == state->total;
 	return res;
+}
+
+b32
+scrn_loading_load_assets(struct loading_state *state, f32 time_start, f32 time_max, void *args)
+{
+	struct app *app = (struct app *)args;
+	f32 delta       = sys_seconds() - time_start;
+	state->total    = arr_len(ASSETS.db.paths.arr) - 1;
+
+	log_info("Loading", "assets from : %u->%u %f", (uint)state->loaded, (uint)state->total, (double)time_start);
+
+	b32 fin = true;
+	while(fin == true && delta < time_max && state->loaded < state->total) {
+		str8 path            = ASSETS.db.paths.arr[state->loaded + 1];
+		enum asset_type type = asset_path_get_type(path);
+		switch(type) {
+		case ASSET_TYPE_TEXTURE: {
+			asset_tex_load(path, NULL);
+		} break;
+		case ASSET_TYPE_FONT: {
+			asset_fnt_load(path, NULL);
+		} break;
+		case ASSET_TYPE_SOUND: {
+			asset_snd_load(path, NULL);
+		} break;
+		case ASSET_TYPE_BET: {
+			dbg_not_implemeneted("Loading");
+		} break;
+		default: {
+			log_error("Loading", "Failed to recognize asset:%s", path.str);
+			dbg_sentinel("Loading");
+		} break;
+		}
+
+		state->loaded++;
+		delta = sys_seconds() - time_start;
+	}
+
+	state->is_finished = state->loaded == state->total;
+	return state->is_finished;
+
+error:
+	return false;
 }

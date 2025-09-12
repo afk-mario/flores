@@ -5,12 +5,15 @@
 #include "engine/assets/assets.h"
 #include "engine/audio/audio.h"
 #include "engine/debug-draw/debug-draw.h"
+#include "engine/gfx/gfx-defs.h"
 #include "engine/input.h"
 #include "lib/pd-utils.h"
 #include "lib/rndm.h"
 #include "sys/sys.h"
 
+#include "scrns/scrn-game/scrn-game.h"
 #include "scrns/scrn-loading/scrn-loading.h"
+#include "scrns/scrn-title/scrn-title.h"
 
 struct app APP;
 
@@ -125,14 +128,18 @@ app_set_scrn(struct app *app, enum scrn_type scrn)
 {
 	sys_menu_clr();
 	marena_reset(&app->mem_transient);
+	struct gfx_ctx ctx = gfx_ctx_display();
+	tex_clr(ctx.dst, GFX_COL_BLACK);
 
 	switch(scrn) {
 	case SCRN_TYPE_LOADING: {
 		scrn_loading_ini(&APP);
 	} break;
 	case SCRN_TYPE_TITLE: {
+		scrn_title_ini(&APP);
 	} break;
 	case SCRN_TYPE_GAME: {
+		scrn_game_ini(&APP);
 	} break;
 	case SCRN_TYPE_TEST: {
 	} break;

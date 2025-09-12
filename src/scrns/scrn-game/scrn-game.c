@@ -14,7 +14,7 @@ scrn_game_ini(struct app *app)
 void
 scrn_game_upd(struct app *app, f32 dt)
 {
-	if(g_ui_pressed_any()) {
+	if(g_ui_just_pressed_any()) {
 		app_set_scrn(app, SCRN_TYPE_TITLE);
 	}
 }

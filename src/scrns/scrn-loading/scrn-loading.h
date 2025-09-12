@@ -10,5 +10,7 @@ b32 scrn_loading_end(struct loading_state *state, f32 time_start, f32 time_max, 
 b32
 scrn_loading_db_init(struct loading_state *state, f32 time_start, f32 time_max, void *args);
 b32 scrn_loading_push_paths(struct loading_state *state, f32 time_start, f32 time_max, void *args);
+b32
+scrn_loading_load_assets(struct loading_state *state, f32 time_start, f32 time_max, void *args);
 
 b32 scrn_loading_load(struct loading_state *state, f32 time_start, f32 time_max, void *args);
