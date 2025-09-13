@@ -6,6 +6,7 @@
     "LOADING",
     "TITLE",
     "GAME",
+    "OVER",
     "TEST",
   ]
 }

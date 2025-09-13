@@ -10,6 +10,7 @@ enum scrn_type {
   SCRN_TYPE_LOADING,
   SCRN_TYPE_TITLE,
   SCRN_TYPE_GAME,
+  SCRN_TYPE_OVER,
   SCRN_TYPE_TEST,
 
   SCRN_TYPE_NUM_COUNT,
@@ -21,6 +22,7 @@ static const str8 SCRN_TYPE_LABELS[SCRN_TYPE_NUM_COUNT] = {
   [SCRN_TYPE_LOADING] = str8_lit_comp("LOADING"),
   [SCRN_TYPE_TITLE] = str8_lit_comp("TITLE"),
   [SCRN_TYPE_GAME] = str8_lit_comp("GAME"),
+  [SCRN_TYPE_OVER] = str8_lit_comp("OVER"),
   [SCRN_TYPE_TEST] = str8_lit_comp("TEST"),
 };
 

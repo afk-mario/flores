@@ -58,5 +58,6 @@
 
 #include "scrns/scrn-game/scrn-game.c"
 #include "scrns/scrn-loading/scrn-loading.c"
+#include "scrns/scrn-over/scrn-over.c"
 #include "scrns/scrn-test/scrn-test.c"
 #include "scrns/scrn-title/scrn-title.c"

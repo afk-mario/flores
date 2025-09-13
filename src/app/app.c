@@ -13,6 +13,7 @@
 
 #include "scrns/scrn-game/scrn-game.h"
 #include "scrns/scrn-loading/scrn-loading.h"
+#include "scrns/scrn-over/scrn-over.h"
 #include "scrns/scrn-title/scrn-title.h"
 
 struct app APP;
@@ -146,6 +147,9 @@ app_set_scrn(struct app *app, enum scrn_type scrn)
 	} break;
 	case SCRN_TYPE_GAME: {
 		scrn_game_ini(&APP);
+	} break;
+	case SCRN_TYPE_OVER: {
+		scrn_over_ini(&APP);
 	} break;
 	case SCRN_TYPE_TEST: {
 	} break;

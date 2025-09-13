@@ -8,8 +8,8 @@ block_drw(struct block *block, u8 block_size)
 {
 	i32 w     = block_size;
 	i32 h     = block_size;
-	i32 x     = block->x;
-	i32 y     = block->y;
+	i32 x     = block->x * block_size;
+	i32 y     = block->y * block_size;
 	i32 cx    = x + (w * 0.5f);
 	i32 cy    = y + (h * 0.5f);
 	rec_i32 r = {.x = x + 1, .y = y + 1, .w = w - 2, .h = h - 2};

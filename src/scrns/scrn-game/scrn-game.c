@@ -15,7 +15,6 @@
 #include "block/block-defs.h"
 #include "board/board-defs.h"
 #include "globals/g-gfx.h"
-#include "globals/g-ui.h"
 #include "scrns/scrn-game/scrn-game-defs.h"
 
 #define GAME_WALL_W 3
@@ -44,7 +43,8 @@ scrn_game_ini(struct app *app)
 		scrn->frame.alloc = marena_allocator(&scrn->frame.marena);
 	}
 
-	board_ini(&scrn->board);
+	f32 timestamp = scrn->frame.timestamp;
+	board_ini(&scrn->board, timestamp);
 }
 
 void
@@ -57,8 +57,10 @@ scrn_game_upd(struct app *app, f32 dt)
 	f32 timestamp            = frame->timestamp;
 	marena_reset(&frame->marena);
 
-	if(g_ui_just_pressed_any()) {
-		app_set_scrn(app, SCRN_TYPE_TITLE);
+	board_upd(&scrn->board, scrn->frame);
+
+	if(scrn->board.state == BOARD_STATE_OVER) {
+		app_set_scrn(app, SCRN_TYPE_OVER);
 	}
 }
 
