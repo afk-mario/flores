@@ -133,6 +133,22 @@ scrn_loading_end(struct loading_state *state, f32 time_start, f32 time_max, void
 		}
 	}
 
+	{
+		enum g_txt_style style = G_TXT_STYLE_HUD;
+		enum g_fnt_id id       = g_fnt_refs_id_get(G_FNT_THICKET);
+		if(id > 0) {
+			struct fnt fnt = asset_fnt(id);
+			dbg_assert(fnt.t.px);
+			struct txt_style txt_style = {
+				.fnt      = fnt,
+				.tracking = 0,
+				.leading  = 0,
+				.mode     = SPR_MODE_WHITE,
+			};
+			g_txt_style(style, txt_style);
+		}
+	}
+
 #if DEBUG
 	app_set_scrn(app, SCRN_TYPE_GAME);
 #else

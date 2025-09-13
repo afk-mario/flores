@@ -1,6 +1,7 @@
 #pragma once
 
 #include "base/marena.h"
+#include "scrns/scrn-game/scrn-game-defs.h"
 #include "scrns/scrn-loading/scrn-loading-defs.h"
 #include "scrns/scrn-type.h"
 
@@ -20,4 +21,5 @@ struct app {
 	void (*drw)(struct app *app);
 
 	struct scrn_loading scrn_loading;
+	struct scrn_game scrn_game;
 };

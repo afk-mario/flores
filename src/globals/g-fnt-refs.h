@@ -10,6 +10,7 @@ enum g_fnt_id {
 
 	G_FNT_MONOGRAM,
 	G_FNT_PICO8,
+	G_FNT_THICKET,
 
 	G_FNT_NUM_COUNT,
 };
@@ -17,6 +18,7 @@ enum g_fnt_id {
 static const str8 G_FNT_PATH_MAP[G_FNT_NUM_COUNT] = {
 	[G_FNT_MONOGRAM] = str8_lit_comp("assets/fonts/monogram-16.fnt"),
 	[G_FNT_PICO8]    = str8_lit_comp("assets/fonts/pico8.fnt"),
+	[G_FNT_THICKET]  = str8_lit_comp("assets/fonts/Thicket-12.fnt"),
 };
 
 static i32 G_FNT_IDS[G_FNT_NUM_COUNT];

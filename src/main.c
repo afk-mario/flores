@@ -4,6 +4,8 @@
 #endif
 #endif
 
+#define SYS_SHOW_FPS 0 // enable fps/ups counter
+
 #include "sys/sys-io.c"
 #include "sys/sys.c"
 #if defined BACKEND_SOKOL

@@ -20,20 +20,18 @@
       "-DTARGET_EXTENSION=1",
       "-DBACKEND_PD=1",
       "-DTARGET_SIMULATOR=1",
-      "-fsanitize-trap",
-      "-fsanitize=address,unreachable",
-      "-fPIC",
+      "-dynamiclib",
       "-Isrc",
       "-Iluna",
       "-isystemluna/external",
-      "-isystem/home/afk/Developer/PlaydateSDK/C_API",
+      "-isystem/Users/mariocarballozama/Developer/PlaydateSDK/C_API",
       "-o",
-      "build/playdate/pdex.so",
+      "build/playdate/pdex.dylib",
       "src/main.c"
     ],
-    "directory": "/home/afk/projects/games/flores",
-    "file": "/home/afk/projects/games/flores/src/main.c",
-    "output": "/home/afk/projects/games/flores/build/playdate/pdex.so"
+    "directory": "/Users/mariocarballozama/projects/games/flores",
+    "file": "/Users/mariocarballozama/projects/games/flores/src/main.c",
+    "output": "/Users/mariocarballozama/projects/games/flores/build/playdate/pdex.dylib"
   },
   {
     "arguments": [
@@ -56,50 +54,17 @@
       "-DTARGET_EXTENSION=1",
       "-DBACKEND_PD=1",
       "-DTARGET_SIMULATOR=1",
-      "-fsanitize-trap",
-      "-fsanitize=address,unreachable",
-      "-fPIC",
+      "-dynamiclib",
       "-Isrc",
       "-Iluna",
       "-isystemluna/external",
-      "-isystem/home/afk/Developer/PlaydateSDK/C_API",
+      "-isystem/Users/mariocarballozama/Developer/PlaydateSDK/C_API",
       "-o",
-      "build/playdate/pdex.so",
-      "/home/afk/Developer/PlaydateSDK/C_API/buildsupport/setup.c"
+      "build/playdate/pdex.dylib",
+      "/Users/mariocarballozama/Developer/PlaydateSDK/C_API/buildsupport/setup.c"
     ],
-    "directory": "/home/afk/projects/games/flores",
-    "file": "/home/afk/Developer/PlaydateSDK/C_API/buildsupport/setup.c",
-    "output": "/home/afk/projects/games/flores/build/playdate/pdex.so"
-  },
-  {
-    "arguments": [
-      "/usr/bin/cc",
-      "-c",
-      "-std=gnu11",
-      "-g3",
-      "-O0",
-      "-Werror",
-      "-Wall",
-      "-Wextra",
-      "-pedantic-errors",
-      "-Wstrict-prototypes",
-      "-Wdouble-promotion",
-      "-Wno-unused-function",
-      "-Wno-unused-but-set-variable",
-      "-Wno-unused-variable",
-      "-Wno-unused-parameter",
-      "-fsanitize-trap",
-      "-fsanitize=address,unreachable",
-      "-DBACKEND_CLI",
-      "-I/home/afk/projects/games/flores/luna/tools",
-      "-Iluna",
-      "-isystemluna/external",
-      "-o",
-      "bin/luna-asset-gen",
-      "/home/afk/projects/games/flores/luna/tools/asset-gen.c"
-    ],
-    "directory": "/home/afk/projects/games/flores",
-    "file": "/home/afk/projects/games/flores/luna/tools/asset-gen.c",
-    "output": "/home/afk/projects/games/flores/bin/luna-asset-gen"
+    "directory": "/Users/mariocarballozama/projects/games/flores",
+    "file": "/Users/mariocarballozama/Developer/PlaydateSDK/C_API/buildsupport/setup.c",
+    "output": "/Users/mariocarballozama/projects/games/flores/build/playdate/pdex.dylib"
   }
 ]
