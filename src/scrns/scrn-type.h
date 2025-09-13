@@ -15,10 +15,12 @@ enum scrn_type {
   SCRN_TYPE_NUM_COUNT,
 };
 
+
 static const str8 SCRN_TYPE_LABELS[SCRN_TYPE_NUM_COUNT] = {
-    [SCRN_TYPE_NONE] = str8_lit_comp("NONE"),
-    [SCRN_TYPE_LOADING] = str8_lit_comp("LOADING"),
-    [SCRN_TYPE_TITLE] = str8_lit_comp("TITLE"),
-    [SCRN_TYPE_GAME] = str8_lit_comp("GAME"),
-    [SCRN_TYPE_TEST] = str8_lit_comp("TEST"),
+  [SCRN_TYPE_NONE] = str8_lit_comp("NONE"),
+  [SCRN_TYPE_LOADING] = str8_lit_comp("LOADING"),
+  [SCRN_TYPE_TITLE] = str8_lit_comp("TITLE"),
+  [SCRN_TYPE_GAME] = str8_lit_comp("GAME"),
+  [SCRN_TYPE_TEST] = str8_lit_comp("TEST"),
 };
+

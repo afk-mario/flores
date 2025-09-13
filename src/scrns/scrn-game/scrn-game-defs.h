@@ -2,6 +2,7 @@
 #include "base/marena.h"
 #include "base/mem.h"
 #include "base/types.h"
+#include "board/board-defs.h"
 
 struct frame_info {
 	f32 dt;
@@ -11,12 +12,7 @@ struct frame_info {
 	struct marena marena;
 };
 
-struct block {
-	u8 x;
-	u8 y;
-	u8 type;
-};
-
 struct scrn_game {
 	struct frame_info frame;
+	struct board board;
 };

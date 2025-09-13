@@ -4,7 +4,7 @@ COMPANY_NAME := afk-mario
 GAME_NAME    := flores
 DESTDIR      := build/
 
-all: macos_build
+all: clean macos_build
 run: macos_run
 
 clean:

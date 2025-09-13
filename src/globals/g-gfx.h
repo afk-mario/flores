@@ -115,6 +115,35 @@ g_cir_fill(i32 x, i32 y, i32 d)
 }
 
 void
+g_tri(i32 ax, i32 ay, i32 bx, i32 by, i32 cx, i32 cy, i32 r)
+{
+	gfx_tri(
+		G_GFX.ctx,
+		ax + G_GFX.offset.x,
+		ay + G_GFX.offset.y,
+		bx + G_GFX.offset.x,
+		by + G_GFX.offset.y,
+		cx + G_GFX.offset.x,
+		cy + G_GFX.offset.y,
+		r,
+		G_GFX.prim_mode);
+}
+
+void
+g_tri_fill(i32 ax, i32 ay, i32 bx, i32 by, i32 cx, i32 cy)
+{
+	gfx_tri_fill(
+		G_GFX.ctx,
+		ax + G_GFX.offset.x,
+		ay + G_GFX.offset.y,
+		bx + G_GFX.offset.x,
+		by + G_GFX.offset.y,
+		cx + G_GFX.offset.x,
+		cy + G_GFX.offset.y,
+		G_GFX.prim_mode);
+}
+
+void
 g_ellipsis(i32 x, i32 y, i32 rx, i32 ry)
 {
 	gfx_ellipsis(G_GFX.ctx, x + G_GFX.offset.x, y + G_GFX.offset.y, rx, ry, G_GFX.prim_mode);

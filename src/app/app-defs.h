@@ -7,6 +7,7 @@
 
 struct app {
 	char version[20];
+	b32 debug_drw;
 	enum scrn_type scrn;
 
 	struct alloc alloc_permanent;

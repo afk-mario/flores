@@ -53,6 +53,9 @@
 
 #include "app/app.c"
 
+#include "block/block.c"
+#include "board/board.c"
+
 #include "scrns/scrn-game/scrn-game.c"
 #include "scrns/scrn-loading/scrn-loading.c"
 #include "scrns/scrn-test/scrn-test.c"

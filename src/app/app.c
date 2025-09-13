@@ -77,11 +77,16 @@ app_tick(f32 dt)
 {
 	TRACE_START(__func__);
 	inp_upd();
+	if(inp_key_just_pressed('b')) {
+		APP.debug_drw = APP.debug_drw ? false : true;
+	}
 
 	if(APP.upd) {
 		APP.upd(&APP, dt);
 	}
 
+	debug_draw_clear();
+	debug_draw_do(0, 0);
 	aud_cmd_queue_commit();
 	TRACE_END();
 }

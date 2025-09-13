@@ -1,0 +1,14 @@
+{
+  "name": "block_type",
+  "prefix": "BLOCK_TYPE_",
+  "columns": ["id", "label", "bitmask"],
+  "elements": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E",
+    "F",
+  ]
+}
+

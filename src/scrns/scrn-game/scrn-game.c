@@ -1,19 +1,25 @@
 #include "scrn-game.h"
+
 #include "app/app.h"
 #include "base/marena.h"
 #include "base/str.h"
 #include "base/types.h"
+#include "block/block-type.h"
+#include "block/block.h"
+#include "board/board.h"
+#include "engine/debug-draw/debug-draw.h"
 #include "engine/gfx/gfx.h"
+#include "lib/layout.h"
+#include "sys/sys.h"
+
+#include "block/block-defs.h"
+#include "board/board-defs.h"
 #include "globals/g-gfx.h"
 #include "globals/g-ui.h"
 #include "scrns/scrn-game/scrn-game-defs.h"
-#include "sys/sys.h"
 
-#define GAME_WALL_W        3
-#define GAME_BLOCK_S       28
-#define GAME_BOARD_COLUMNS 6
-#define GAME_BOARD_ROWS    8
-#define GAME_HUD_W         SYS_DISPLAY_W - GAME_WALL_W - GAME_WALL_W - (GAME_BLOCK_S * 6 * 2)
+#define GAME_WALL_W 3
+#define GAME_HUD_W  SYS_DISPLAY_W - (GAME_WALL_W * 2) - (BLOCK_SIZE * (BOARD_COLUMNS * 2))
 
 static inline void scrn_game_drw_bg(struct scrn_game *scrn);
 static inline void scrn_game_drw_walls(struct scrn_game *scrn);
@@ -37,6 +43,8 @@ scrn_game_ini(struct app *app)
 		marena_init(&scrn->frame.marena, frame_mem, frame_mem_size);
 		scrn->frame.alloc = marena_allocator(&scrn->frame.marena);
 	}
+
+	board_ini(&scrn->board);
 }
 
 void
@@ -60,14 +68,21 @@ scrn_game_drw(struct app *app)
 	enum g_txt_style style  = G_TXT_STYLE_DEBUG;
 	struct scrn_game *scrn  = &app->scrn_game;
 	struct frame_info frame = scrn->frame;
+	struct board *board     = &scrn->board;
 
 	g_drw_offset(0, 0);
 	scrn_game_drw_bg(scrn);
 	scrn_game_drw_walls(scrn);
 	g_drw_offset(
 		GAME_WALL_W,
-		SYS_DISPLAY_H - GAME_WALL_W - (GAME_BLOCK_S * GAME_BOARD_ROWS));
+		SYS_DISPLAY_H - GAME_WALL_W - (BLOCK_SIZE * board->rows));
 	scrn_game_drw_game(scrn);
+
+#if DEBUG
+	if(app->debug_drw) {
+		debug_draw_do(0, 0);
+	}
+#endif
 }
 
 static inline void
@@ -92,35 +107,58 @@ scrn_game_drw_walls(struct scrn_game *scrn)
 		g_rec_fill(0, SYS_DISPLAY_H - wall_s, SYS_DISPLAY_W, wall_s); // bottom
 	}
 	{
-		i32 hud_s = GAME_HUD_W;
-		i32 hud_x = (SYS_DISPLAY_W * 0.5f) - (hud_s * 0.5f);
-		g_rec_fill(
-			hud_x,
-			0,
-			hud_s,
-			SYS_DISPLAY_H); // HUD
+		enum g_txt_style style = G_TXT_STYLE_HUD;
+		i32 hud_w              = GAME_HUD_W;
+		i32 margin             = 8;
+		rec_i32 rec            = {
+					   .x = (SYS_DISPLAY_W * 0.5f) - (hud_w * 0.5f),
+					   .y = 0,
+					   .w = GAME_HUD_W,
+					   .h = SYS_DISPLAY_H,
+        };
+		struct ui_rec root = ui_rec_from_rec(rec.x, rec.y, rec.w, rec.h);
+
+		g_color(PRIM_MODE_BLACK);
+		g_rec_fill(rec.x, rec.y, rec.w, rec.h);
+		debug_draw_ui_rec(root);
+		ui_cut_top(&root, 13);
+		debug_draw_ui_rec(root);
+		debug_draw_ui_rec(root);
+		g_color(PRIM_MODE_WHITE);
 		{
-			i32 x                  = SYS_DISPLAY_W * 0.5f;
-			enum g_txt_style style = G_TXT_STYLE_HUD;
-			str8 str               = str8_lit("Next\npiece");
-			g_color(PRIM_MODE_WHITE);
-			g_txt_pivot(str, x, 15, (v2){0.5f, 0.5f}, style);
+			str8 str             = str8_lit("Next\npiece");
+			v2_i32 size          = g_txt_size(str, style);
+			struct ui_rec layout = ui_cut_top(&root, size.y);
+			v2_i32 cntr          = ui_cntr_get(&layout);
+			g_txt_pivot(str, cntr.x, cntr.y, (v2){0.5f, 0.5f}, style);
+			debug_draw_ui_rec(layout);
 		}
+		ui_cut_top(&root, margin * 0.5f);
 		{
-			i32 x                  = SYS_DISPLAY_W * 0.5f;
-			enum g_txt_style style = G_TXT_STYLE_HUD;
-			str8 str               = str8_lit("Level\n01");
-			g_color(PRIM_MODE_WHITE);
-			g_txt_pivot(str, x, 50, (v2){0.5f, 0.5f}, style);
+			struct ui_rec layout = ui_cut_top(&root, BLOCK_SIZE);
+			v2_i32 cntr          = ui_cntr_get(&layout);
+			block_drw(&(struct block){.x = cntr.x - (BLOCK_SIZE * 0.5f), .y = cntr.y - (BLOCK_SIZE * 0.5f), .type = BLOCK_TYPE_A}, BLOCK_SIZE);
 		}
+		ui_cut_top(&root, margin);
 		{
-			i32 x                  = SYS_DISPLAY_W * 0.5f;
-			enum g_txt_style style = G_TXT_STYLE_HUD;
-			str8 str               = str8_lit("SCORE\n0000");
-			g_color(PRIM_MODE_WHITE);
-			g_txt_pivot(str, x, 80, (v2){0.5f, 0.5f}, style);
+			str8 str             = str8_lit("Level\n01");
+			v2_i32 size          = g_txt_size(str, style);
+			struct ui_rec layout = ui_cut_top(&root, size.y);
+			v2_i32 cntr          = ui_cntr_get(&layout);
+			g_txt_pivot(str, cntr.x, cntr.y, (v2){0.5f, 0.5f}, style);
+			debug_draw_ui_rec(layout);
+		}
+		ui_cut_top(&root, margin);
+		{
+			str8 str             = str8_lit("SCORE\n0000");
+			v2_i32 size          = g_txt_size(str, style);
+			struct ui_rec layout = ui_cut_top(&root, size.y);
+			v2_i32 cntr          = ui_cntr_get(&layout);
+			g_txt_pivot(str, cntr.x, cntr.y, (v2){0.5f, 0.5f}, style);
+			debug_draw_ui_rec(layout);
 		}
 	}
+
 	{
 		g_color(PRIM_MODE_WHITE);
 		i32 space = 2;
@@ -137,37 +175,5 @@ scrn_game_drw_walls(struct scrn_game *scrn)
 static inline void
 scrn_game_drw_game(struct scrn_game *scrn)
 {
-	i32 w = GAME_BLOCK_S;
-	i32 h = GAME_BLOCK_S;
-	i32 r = GAME_BOARD_ROWS;
-	i32 c = GAME_BOARD_COLUMNS;
-	for(size i = 0; i < r * c; ++i) {
-		struct block block = {.x = i % c, .y = i / c};
-		scrn_game_drw_block(scrn, &block);
-	}
-}
-
-static inline void
-scrn_game_drw_block(struct scrn_game *scrn, struct block *block)
-{
-	i32 w     = GAME_BLOCK_S;
-	i32 h     = GAME_BLOCK_S;
-	i32 x     = block->x * GAME_BLOCK_S;
-	i32 y     = block->y * GAME_BLOCK_S;
-	i32 cx    = x + (w * 0.5f);
-	i32 cy    = y + (h * 0.5f);
-	rec_i32 r = {.x = x + 1, .y = y + 1, .w = w - 2, .h = h - 2};
-	g_color(PRIM_MODE_BLACK);
-	g_rec(r.x, r.y, r.w, r.h);
-	g_pat(gfx_pattern_white());
-	g_color(PRIM_MODE_WHITE);
-	g_rec(r.x, r.y, 1, 1);
-	g_rec(r.x + r.w - 1, r.y, 1, 1);
-	g_rec(r.x, r.y + r.h - 1, 1, 1);
-	g_rec(r.x + r.w - 1, r.y + r.h - 1, 1, 1);
-	g_color(PRIM_MODE_BLACK);
-	g_pat(gfx_pattern_100());
-	g_rec_fill(r.x + 2, r.y + 2, r.w - 4, r.h - 4);
-	g_color(PRIM_MODE_WHITE);
-	g_cir_fill(cx, cy, w / 2);
+	board_drw(&scrn->board);
 }
