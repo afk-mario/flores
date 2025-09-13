@@ -150,6 +150,7 @@ macos_release:
 macos_publish:
 	make -f ./luna/macos.mk publish \
 		DESTDIR=$(DESTDIR) \
+		COMPANY_NAME=$(COMPANY_NAME) \
 		GAME_NAME=$(GAME_NAME) \
 		CDEFS="-DSYS_LOG_LEVEL=2 -DDEV=1"
 
