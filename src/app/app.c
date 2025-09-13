@@ -20,6 +20,7 @@ struct app APP;
 void
 app_init(usize mem_max)
 {
+	sys_set_app_name(str8_lit("Flores"));
 	size permanent = MMEGABYTE(5.0);
 	size transient = MMEGABYTE(7.0);
 	size debug     = 0;

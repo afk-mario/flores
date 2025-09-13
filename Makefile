@@ -4,7 +4,8 @@ COMPANY_NAME := afk-mario
 GAME_NAME    := flores
 DESTDIR      := build/
 
-all: linux_run
+all: macos_build
+run: macos_run
 
 clean:
 	rm -rf $(DESTDIR)
@@ -44,8 +45,14 @@ pd_release:
 	make -f ./luna/playdate.mk release \
 		DESTDIR=$(DESTDIR) \
 		GAME_NAME=$(GAME_NAME) \
-		CDEFS="-DSYS_SHOW_FPS=0 -DSYS_LOG_LEVEL=2" \
-		DEBUG=0
+		CDEFS="-DSYS_SHOW_FPS=0 -DSYS_LOG_LEVEL=2"
+
+pd_publish:
+	make -f ./luna/playdate.mk publish \
+		DESTDIR=$(DESTDIR) \
+		COMPANY_NAME=$(COMPANY_NAME) \
+		GAME_NAME=$(GAME_NAME) \
+		CDEFS="-DSYS_SHOW_FPS=0 -DSYS_LOG_LEVEL=2"
 
 pd_run:
 	make -f ./luna/playdate.mk run \
@@ -114,6 +121,7 @@ www_release:
 www_publish:
 	make -f ./luna/www.mk publish \
 		DESTDIR=$(DESTDIR) \
+		COMPANY_NAME=$(COMPANY_NAME) \
 		GAME_NAME=$(GAME_NAME) \
 		CDEFS="-DSYS_LOG_LEVEL=2 -DDEV=1"
 
