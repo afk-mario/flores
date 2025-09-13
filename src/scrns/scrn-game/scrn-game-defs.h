@@ -11,6 +11,12 @@ struct frame_info {
 	struct marena marena;
 };
 
+struct block {
+	u8 x;
+	u8 y;
+	u8 type;
+};
+
 struct scrn_game {
 	struct frame_info frame;
 };
