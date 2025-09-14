@@ -9,8 +9,10 @@
 #include "block/block-type.h"
 #include "block/block.h"
 #include "board/board.h"
+#include "engine/assets/assets.h"
 #include "engine/debug-draw/debug-draw.h"
 #include "engine/gfx/gfx.h"
+#include "globals/g-tex-refs.h"
 #include "sys/sys.h"
 
 #include "block/block-defs.h"
@@ -92,10 +94,7 @@ static inline void
 scrn_game_drw_bg(struct scrn_game *scrn)
 {
 	g_color(PRIM_MODE_BLACK);
-	// g_color(PRIM_MODE_WHITE);
-	// g_pat(gfx_pattern_25());
 	g_rec_fill(0, 0, SYS_DISPLAY_W, SYS_DISPLAY_H);
-	g_pat(gfx_pattern_white());
 }
 
 static inline void
@@ -120,15 +119,15 @@ scrn_game_drw_walls(struct scrn_game *scrn)
 		g_color(PRIM_MODE_BLACK);
 		g_rec_fill(root.x, root.y, root.w, root.h);
 		g_color(PRIM_MODE_WHITE);
-		g_lin(inset.x + inset.w, inset.y, inset.x + inset.w, inset.y + inset.h); // right
-		g_lin(inset.x, inset.y, inset.x, inset.y + inset.h);                     // left
+		g_lin(inset.x + inset.w - 1, inset.y, inset.x + inset.w - 1, inset.y + inset.h); // right
+		g_lin(inset.x, inset.y, inset.x, inset.y + inset.h);                             // left
 		debug_draw_rec_i32(root);
 		rec_i32_cut_top(&root, 13);
 		debug_draw_rec_i32(root);
 		debug_draw_rec_i32(root);
 		g_color(PRIM_MODE_WHITE);
 		{
-			str8 str       = str8_lit("Next\npiece");
+			str8 str       = str8_lit("Next\nseed");
 			v2_i32 size    = g_txt_size(str, style);
 			rec_i32 layout = rec_i32_cut_top(&root, size.y);
 			v2_i32 cntr    = rec_i32_cntr(layout);
@@ -139,7 +138,19 @@ scrn_game_drw_walls(struct scrn_game *scrn)
 		{
 			rec_i32 layout = rec_i32_cut_top(&root, BLOCK_SIZE);
 			v2_i32 cntr    = rec_i32_cntr(layout);
-			block_drw(&(struct block){.x = cntr.x - (BLOCK_SIZE * 0.5f), .y = cntr.y - (BLOCK_SIZE * 0.5f), .type = BLOCK_TYPE_A}, BLOCK_SIZE);
+			{
+				struct block block = {
+					.x    = cntr.x - (BLOCK_SIZE * 0.5f),
+					.y    = cntr.y - (BLOCK_SIZE * 0.5f),
+					.type = BLOCK_TYPE_A};
+				block_drw(&block, BLOCK_SIZE);
+			}
+			{
+				i32 id                 = g_tex_refs_id_get(G_TEX_ACORN);
+				struct tex t           = asset_tex(id);
+				struct tex_rec tex_rec = asset_tex_rec(id, 0, 0, t.w, t.h);
+				g_spr_piv(tex_rec, cntr.x, cntr.y, 0, (v2){0.5f, 0.5f});
+			}
 		}
 		rec_i32_cut_top(&root, margin);
 		{

@@ -10,7 +10,10 @@ struct block_handle {
 
 struct block {
 	u16 id;
+	u8 bx;
+	u8 by;
 	i16 x;
 	i16 y;
 	u8 type;
+	u8 state;
 };

@@ -5,6 +5,7 @@
 #include "block/block-type.h"
 #include "block/block.h"
 #include "engine/input.h"
+#include "globals/g-gfx.h"
 #include "lib/rndm.h"
 
 static inline void board_spawn_rndm_piece(struct board *board, f32 timestamp);
@@ -12,7 +13,7 @@ static inline struct block_handle board_spawn_block(struct board *board, struct 
 static inline void board_remove_block(struct board *board, struct block_handle handle);
 static inline b32 board_has_block(struct board *board, u8 x, u8 y);
 
-#define BOARD_FULL
+// #define BOARD_FULL
 #define PIECE_SPEED 0.8f
 
 void
@@ -35,7 +36,7 @@ board_ini(struct board *board, f32 timestamp)
 		struct block block = {
 			.x    = (i % board->columns),
 			.y    = (i / board->columns),
-			.type = rndm_range_i32(NULL, BLOCK_TYPE_NONE + 1, BLOCK_TYPE_C),
+			.type = rndm_range_i32(NULL, BLOCK_TYPE_NONE + 1, BLOCK_TYPE_D),
 		};
 		board_spawn_block(board, block);
 	}
@@ -101,12 +102,26 @@ board_drw(struct board *board)
 {
 	i32 r = board->rows;
 	i32 c = board->columns;
+
+	{
+#if BOARD_USE_SHAPES
+		g_color(PRIM_MODE_BLACK);
+#else
+		g_color(PRIM_MODE_WHITE);
+#endif
+		g_rec_fill(
+			0,
+			-1 * board->block_size,
+			board->columns * board->block_size,
+			(board->rows + 1) * board->block_size);
+	}
+
 	switch(board->state) {
 	case BOARD_STATE_PIECE: {
 		struct piece *piece = &board->piece;
 		i32 block_size      = board->block_size;
-		struct block a      = {.x = piece->x, .y = piece->y, .type = piece->types[0]};
-		struct block b      = {.x = (piece->x + 1), .y = piece->y, .type = piece->types[1]};
+		struct block a      = {.x = piece->x, .y = piece->y, .type = piece->types[0], .state = 1};
+		struct block b      = {.x = (piece->x + 1), .y = piece->y, .type = piece->types[1], .state = 1};
 		block_drw(&a, board->block_size);
 		block_drw(&b, board->block_size);
 

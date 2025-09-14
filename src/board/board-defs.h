@@ -6,8 +6,9 @@
 #include "block/block-type.h"
 #include "board/board-state.h"
 
-#define BOARD_COLUMNS 6
-#define BOARD_ROWS    8
+#define BOARD_COLUMNS    6
+#define BOARD_ROWS       8
+#define BOARD_USE_SHAPES true
 
 struct piece {
 	i16 x;
