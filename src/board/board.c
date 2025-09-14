@@ -12,7 +12,7 @@ static inline struct block_handle board_spawn_block(struct board *board, struct 
 static inline void board_remove_block(struct board *board, struct block_handle handle);
 static inline b32 board_has_block(struct board *board, u8 x, u8 y);
 
-// #define BOARD_FULL
+#define BOARD_FULL
 #define PIECE_SPEED 0.8f
 
 void
@@ -115,7 +115,7 @@ board_drw(struct board *board)
 	} break;
 	}
 
-	for(size i = 0; i < r * c; ++i) {
+	for(size i = 0; i < (size)ARRLEN(board->blocks); ++i) {
 		struct block *block = board->blocks + i;
 		if(block->type == BLOCK_TYPE_NONE) { continue; }
 		block_drw(block, board->block_size);
@@ -125,6 +125,7 @@ board_drw(struct board *board)
 static inline struct block_handle
 board_spawn_block(struct board *board, struct block block)
 {
+	dbg_assert(!board_has_block(board, block.x, block.y));
 	struct block_handle res = {0};
 	for(size i = 1; i < (size)ARRLEN(board->blocks); ++i) {
 		if(board->blocks[i].id == 0) {

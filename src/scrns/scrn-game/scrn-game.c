@@ -1,7 +1,9 @@
 #include "scrn-game.h"
 
+#include "app/app-data.h"
 #include "app/app.h"
 #include "base/marena.h"
+#include "base/rec.h"
 #include "base/str.h"
 #include "base/types.h"
 #include "block/block-type.h"
@@ -9,7 +11,6 @@
 #include "board/board.h"
 #include "engine/debug-draw/debug-draw.h"
 #include "engine/gfx/gfx.h"
-#include "lib/layout.h"
 #include "sys/sys.h"
 
 #include "block/block-defs.h"
@@ -91,7 +92,7 @@ static inline void
 scrn_game_drw_bg(struct scrn_game *scrn)
 {
 	g_color(PRIM_MODE_BLACK);
-	g_color(PRIM_MODE_WHITE);
+	// g_color(PRIM_MODE_WHITE);
 	// g_pat(gfx_pattern_25());
 	g_rec_fill(0, 0, SYS_DISPLAY_W, SYS_DISPLAY_H);
 	g_pat(gfx_pattern_white());
@@ -111,53 +112,52 @@ scrn_game_drw_walls(struct scrn_game *scrn)
 	{
 		enum g_txt_style style = G_TXT_STYLE_HUD;
 		i32 hud_w              = GAME_HUD_W;
+		i32 hud_h              = SYS_DISPLAY_H - GAME_WALL_W;
 		i32 margin             = 8;
-		rec_i32 rec            = {
-					   .x = (SYS_DISPLAY_W * 0.5f) - (hud_w * 0.5f),
-					   .y = 0,
-					   .w = GAME_HUD_W,
-					   .h = SYS_DISPLAY_H,
-        };
-		struct ui_rec root = ui_rec_from_rec(rec.x, rec.y, rec.w, rec.h);
+		rec_i32 root           = rec_i32_anchor(APP_SCRN_REC, (rec_i32){.w = hud_w, .h = hud_h}, (v2){0.5f, 0.5f});
+		rec_i32 inset          = rec_i32_inset_x(root, 2);
 
 		g_color(PRIM_MODE_BLACK);
-		g_rec_fill(rec.x, rec.y, rec.w, rec.h);
-		debug_draw_ui_rec(root);
-		ui_cut_top(&root, 13);
-		debug_draw_ui_rec(root);
-		debug_draw_ui_rec(root);
+		g_rec_fill(root.x, root.y, root.w, root.h);
+		g_color(PRIM_MODE_WHITE);
+		g_lin(inset.x + inset.w, inset.y, inset.x + inset.w, inset.y + inset.h); // right
+		g_lin(inset.x, inset.y, inset.x, inset.y + inset.h);                     // left
+		debug_draw_rec_i32(root);
+		rec_i32_cut_top(&root, 13);
+		debug_draw_rec_i32(root);
+		debug_draw_rec_i32(root);
 		g_color(PRIM_MODE_WHITE);
 		{
-			str8 str             = str8_lit("Next\npiece");
-			v2_i32 size          = g_txt_size(str, style);
-			struct ui_rec layout = ui_cut_top(&root, size.y);
-			v2_i32 cntr          = ui_cntr_get(&layout);
+			str8 str       = str8_lit("Next\npiece");
+			v2_i32 size    = g_txt_size(str, style);
+			rec_i32 layout = rec_i32_cut_top(&root, size.y);
+			v2_i32 cntr    = rec_i32_cntr(layout);
 			g_txt_pivot(str, cntr.x, cntr.y, (v2){0.5f, 0.5f}, style);
-			debug_draw_ui_rec(layout);
+			debug_draw_rec_i32(layout);
 		}
-		ui_cut_top(&root, margin * 0.5f);
+		rec_i32_cut_top(&root, margin * 0.5f);
 		{
-			struct ui_rec layout = ui_cut_top(&root, BLOCK_SIZE);
-			v2_i32 cntr          = ui_cntr_get(&layout);
+			rec_i32 layout = rec_i32_cut_top(&root, BLOCK_SIZE);
+			v2_i32 cntr    = rec_i32_cntr(layout);
 			block_drw(&(struct block){.x = cntr.x - (BLOCK_SIZE * 0.5f), .y = cntr.y - (BLOCK_SIZE * 0.5f), .type = BLOCK_TYPE_A}, BLOCK_SIZE);
 		}
-		ui_cut_top(&root, margin);
+		rec_i32_cut_top(&root, margin);
 		{
-			str8 str             = str8_lit("Level\n01");
-			v2_i32 size          = g_txt_size(str, style);
-			struct ui_rec layout = ui_cut_top(&root, size.y);
-			v2_i32 cntr          = ui_cntr_get(&layout);
+			str8 str       = str8_lit("Level\n01");
+			v2_i32 size    = g_txt_size(str, style);
+			rec_i32 layout = rec_i32_cut_top(&root, size.y);
+			v2_i32 cntr    = rec_i32_cntr(layout);
 			g_txt_pivot(str, cntr.x, cntr.y, (v2){0.5f, 0.5f}, style);
-			debug_draw_ui_rec(layout);
+			debug_draw_rec_i32(layout);
 		}
-		ui_cut_top(&root, margin);
+		rec_i32_cut_top(&root, margin);
 		{
-			str8 str             = str8_lit("SCORE\n0000");
-			v2_i32 size          = g_txt_size(str, style);
-			struct ui_rec layout = ui_cut_top(&root, size.y);
-			v2_i32 cntr          = ui_cntr_get(&layout);
+			str8 str       = str8_lit("SCORE\n0000");
+			v2_i32 size    = g_txt_size(str, style);
+			rec_i32 layout = rec_i32_cut_top(&root, size.y);
+			v2_i32 cntr    = rec_i32_cntr(layout);
 			g_txt_pivot(str, cntr.x, cntr.y, (v2){0.5f, 0.5f}, style);
-			debug_draw_ui_rec(layout);
+			debug_draw_rec_i32(layout);
 		}
 	}
 

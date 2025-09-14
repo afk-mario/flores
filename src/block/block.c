@@ -14,12 +14,15 @@ block_drw(struct block *block, u8 block_size)
 	i32 cy    = y + (h * 0.5f);
 	rec_i32 r = {.x = x + 1, .y = y + 1, .w = w - 2, .h = h - 2};
 
+	// g_color(PRIM_MODE_WHITE);
+	// g_rrec_fill(r.x - 1, r.y - 1, r.w + 2, r.h + 2, 3);
+	// g_color(PRIM_MODE_BLACK);
+	// g_rec_fill(r.x - 1, r.y - 1, r.w + 2, r.h + 2);
+	// g_rrec_fill(r.x, r.y, r.w, r.h, 3);
 	g_color(PRIM_MODE_WHITE);
-	g_rrec_fill(r.x - 1, r.y - 1, r.w + 2, r.h + 2, 3);
-	g_color(PRIM_MODE_BLACK);
-	g_rrec_fill(r.x, r.y, r.w, r.h, 3);
+	g_cir(cx, cy, r.w - 1);
 
-	i32 d = w - 15;
+	i32 d = w - 18;
 	g_color(PRIM_MODE_WHITE);
 	switch(block->type) {
 	case BLOCK_TYPE_A: {
