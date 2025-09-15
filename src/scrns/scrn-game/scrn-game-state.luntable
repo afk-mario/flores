@@ -1,0 +1,12 @@
+{
+  "name": "scrn_game_state",
+  "prefix": "SCRN_GAME_STATE_",
+  "columns": ["id", "label"],
+  "elements": [
+    "PLAY",
+    "COLLPASE",
+    "PAUSE",
+    "OVER",
+  ]
+}
+

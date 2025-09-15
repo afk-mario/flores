@@ -3,25 +3,15 @@
 #include "base/types.h"
 
 #include "block/block-defs.h"
-#include "block/block-type.h"
-#include "board/board-state.h"
 
 #define BOARD_COLUMNS    6
 #define BOARD_ROWS       8
 #define BOARD_USE_SHAPES true
 
-struct piece {
-	i16 x;
-	i16 y;
-	f32 timestamp;
-	enum block_type types[2];
-};
-
 struct board {
-	u8 columns;
-	u8 rows;
-	u8 block_size;
-	enum board_state state;
-	struct piece piece;
+	i16 columns;
+	i16 rows;
+	i16 block_size;
+	f32 block_size_inv;
 	struct block blocks[(BOARD_COLUMNS * (BOARD_ROWS + 1)) + 1];
 };

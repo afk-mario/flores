@@ -85,6 +85,12 @@ g_spr_mode(enum spr_mode mode)
 }
 
 void
+g_px(i32 x, i32 y)
+{
+	gfx_rec(G_GFX.ctx, x + G_GFX.offset.x, y + G_GFX.offset.y, 1, 1, G_GFX.prim_mode);
+}
+
+void
 g_rec(i32 x, i32 y, i32 w, i32 h)
 {
 	gfx_rec(G_GFX.ctx, x + G_GFX.offset.x, y + G_GFX.offset.y, w, h, G_GFX.prim_mode);

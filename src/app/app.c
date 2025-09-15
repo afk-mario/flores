@@ -7,6 +7,7 @@
 #include "engine/debug-draw/debug-draw.h"
 #include "engine/gfx/gfx-defs.h"
 #include "engine/input.h"
+#include "globals/g-dbg.h"
 #include "lib/pd-utils.h"
 #include "lib/rndm.h"
 #include "sys/sys.h"
@@ -77,7 +78,9 @@ void
 app_tick(f32 dt)
 {
 	TRACE_START(__func__);
+	g_dbg_clr();
 	inp_upd();
+	g_dbg_str(SCRN_TYPE_LABELS[APP.scrn]);
 	if(inp_key_just_pressed('b')) {
 		APP.debug_drw = APP.debug_drw ? false : true;
 	}
@@ -110,6 +113,7 @@ app_draw(void)
 		APP.drw(&APP);
 	}
 
+	g_dbg_drw();
 	TRACE_END();
 }
 

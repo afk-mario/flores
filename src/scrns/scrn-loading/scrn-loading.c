@@ -5,6 +5,7 @@
 #include "base/trace.h"
 #include "base/utils.h"
 #include "engine/assets/assets.h"
+#include "globals/g-dbg.h"
 #include "globals/g-fnt-refs.h"
 #include "globals/g-gfx.h"
 #include "globals/g-mus-refs.h"
@@ -95,6 +96,7 @@ scrn_loading_end(struct loading_state *state, f32 time_start, f32 time_max, void
 	struct app *app          = (struct app *)args;
 	const struct gfx_ctx ctx = gfx_ctx_display();
 
+	g_dbg_ini(app->alloc_permanent);
 	g_ui_init();
 	g_tex_refs_ini();
 	g_fnt_refs_ini();

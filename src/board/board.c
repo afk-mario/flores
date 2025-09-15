@@ -1,99 +1,34 @@
 #include "board.h"
-#include "base/dbg.h"
-#include "base/mathfunc.h"
+#include "base/log.h"
+#include "base/rec.h"
 #include "base/types.h"
 #include "block/block-type.h"
 #include "block/block.h"
-#include "engine/input.h"
 #include "globals/g-gfx.h"
-#include "lib/rndm.h"
-
-static inline void board_spawn_rndm_piece(struct board *board, f32 timestamp);
-static inline struct block_handle board_spawn_block(struct board *board, struct block block);
-static inline void board_remove_block(struct board *board, struct block_handle handle);
-static inline b32 board_has_block(struct board *board, u8 x, u8 y);
-
-// #define BOARD_FULL
-#define PIECE_SPEED 0.8f
 
 void
 board_ini(struct board *board, f32 timestamp)
 {
-	i32 r             = board->rows;
-	i32 c             = board->columns;
-	board->columns    = BOARD_COLUMNS;
-	board->rows       = BOARD_ROWS;
-	board->block_size = BLOCK_SIZE;
-	i32 block_count   = BOARD_COLUMNS * BOARD_ROWS;
-#if !defined(BOARD_FULL)
-	board_spawn_rndm_piece(board, timestamp);
-#endif
+	i32 r                 = board->rows;
+	i32 c                 = board->columns;
+	board->columns        = BOARD_COLUMNS;
+	board->rows           = BOARD_ROWS;
+	board->block_size     = BLOCK_SIZE;
+	board->block_size_inv = 1.0f / (f32)BLOCK_SIZE;
 
 	mclr_array(board->blocks);
-
-#if defined(BOARD_FULL)
-	for(size i = 0; i < block_count; ++i) {
-		struct block block = {
-			.x    = (i % board->columns),
-			.y    = (i / board->columns),
-			.type = rndm_range_i32(NULL, BLOCK_TYPE_NONE + 1, BLOCK_TYPE_D),
-		};
-		board_spawn_block(board, block);
-	}
-#endif
 }
 
 void
 board_upd(struct board *board, struct frame_info frame)
 {
-	f32 timestamp = frame.timestamp;
+	f32 timestamp        = frame.timestamp;
+	struct alloc scratch = frame.alloc;
 
-	switch(board->state) {
-	case BOARD_STATE_PIECE: {
-		struct piece *piece = &board->piece;
-		i32 x               = piece->x;
-		i32 y               = piece->y;
-		if(inp_just_pressed(INP_DPAD_L)) {
-			x = max_i32(x - 1, 0);
-		} else if(inp_just_pressed(INP_DPAD_R)) {
-			x = min_i32(x + 1, board->columns - 2);
-		} else if(inp_just_pressed(INP_DPAD_D)) {
-			y                = min_i32(y + 1, board->rows);
-			piece->timestamp = timestamp + PIECE_SPEED;
-		} else if(piece->timestamp < timestamp) {
-			y                = min_i32(y + 1, board->rows);
-			piece->timestamp = timestamp + PIECE_SPEED;
-		}
-
-		// TODO: Fix this
-		if(inp_just_pressed(INP_DPAD_U)) {
-			for(size i = piece->y; i < board->rows; ++i) {
-				if(
-					!board_has_block(board, x, i) &&
-					!board_has_block(board, x + 1, i)) {
-					y = i;
-				}
-			}
-		}
-
-		if(
-			y == board->rows ||
-			board_has_block(board, x, y) ||
-			board_has_block(board, x + 1, y)) {
-			if(piece->y == -1) {
-				board->state = BOARD_STATE_OVER;
-			} else {
-				board_spawn_block(board, (struct block){.x = piece->x, .y = piece->y, .type = piece->types[0]});
-				board_spawn_block(board, (struct block){.x = piece->x + 1, .y = piece->y, .type = piece->types[1]});
-				board_spawn_rndm_piece(board, timestamp);
-			}
-		} else {
-			piece->x = x;
-			piece->y = y;
-		}
-	} break;
-	default: {
-	} break;
+	for(size i = 0; i < (size)ARRLEN(board->blocks); ++i) {
+		struct block *block = board->blocks + i;
+		if(block->type == BLOCK_TYPE_NONE) { continue; }
+		block_upd(block, board->block_size);
 	}
 }
 
@@ -116,70 +51,118 @@ board_drw(struct board *board)
 			(board->rows + 1) * board->block_size);
 	}
 
-	switch(board->state) {
-	case BOARD_STATE_PIECE: {
-		struct piece *piece = &board->piece;
-		i32 block_size      = board->block_size;
-		struct block a      = {.x = piece->x, .y = piece->y, .type = piece->types[0], .state = 1};
-		struct block b      = {.x = (piece->x + 1), .y = piece->y, .type = piece->types[1], .state = 1};
-		block_drw(&a, board->block_size);
-		block_drw(&b, board->block_size);
-
-	} break;
-	default: {
-	} break;
-	}
-
 	for(size i = 0; i < (size)ARRLEN(board->blocks); ++i) {
 		struct block *block = board->blocks + i;
 		if(block->type == BLOCK_TYPE_NONE) { continue; }
-		block_drw(block, board->block_size);
+		v2_i32 p = board_idx_to_px(board, i);
+		block_drw(block, p.x, p.y, board->block_size);
 	}
 }
 
-static inline struct block_handle
-board_spawn_block(struct board *board, struct block block)
+void
+board_block_set(struct board *board, struct block block, i32 x, i32 y)
 {
-	dbg_assert(!board_has_block(board, block.x, block.y));
-	struct block_handle res = {0};
-	for(size i = 1; i < (size)ARRLEN(board->blocks); ++i) {
-		if(board->blocks[i].id == 0) {
-			board->blocks[i]    = block;
-			board->blocks[i].id = i;
-			res.id              = i;
-			break;
-		}
+	i16 idx = board_coords_to_idx(board, x, y);
+	log_info("board", "set: %d,%d[%d]=%d", x, y, idx, block.type);
+	if(idx < 0 || idx > (size)ARRLEN(board->blocks)) {
+		log_warn("board", "tried setting at invalid: %d,%d[%d]=%d", x, y, idx, block.type);
+		return;
 	}
-	return res;
+	board->blocks[idx]    = block;
+	board->blocks[idx].id = idx;
 }
 
-static inline void
-board_remove_block(struct board *board, struct block_handle handle)
+void
+board_block_clr(struct board *board, i32 x, i32 y)
 {
-	dbg_assert(handle.id > 0 && handle.id < ARRLEN(board->blocks));
-	board->blocks[handle.id].id = 0;
+	i16 idx = board_coords_to_idx(board, x, y);
+	if(idx < 0 || idx > (size)ARRLEN(board->blocks)) { return; }
+	board->blocks[idx].id   = 0;
+	board->blocks[idx].type = BLOCK_TYPE_NONE;
 }
 
-static inline void
-board_spawn_rndm_piece(struct board *board, f32 timestamp)
-{
-	board->piece.types[0]  = rndm_range_i32(NULL, BLOCK_TYPE_NONE + 1, BLOCK_TYPE_C);
-	board->piece.types[1]  = rndm_range_i32(NULL, BLOCK_TYPE_NONE + 1, BLOCK_TYPE_C);
-	board->piece.x         = board->columns * 0.5f;
-	board->piece.y         = -1;
-	board->piece.timestamp = timestamp + PIECE_SPEED;
-	board->state           = BOARD_STATE_PIECE;
-}
-
-static inline b32
-board_has_block(struct board *board, u8 x, u8 y)
+b32
+board_block_has(struct board *board, i16 x, i16 y)
 {
 	b32 res = false;
-	for(size i = 0; i < (size)ARRLEN(board->blocks); ++i) {
-		if(board->blocks[i].id != 0 && board->blocks[i].x == x && board->blocks[i].y == y) {
-			return true;
-			break;
-		}
-	}
+	i16 idx = board_coords_to_idx(board, x, y);
+	if(idx < 0 || idx > (size)ARRLEN(board->blocks)) { return res; }
+	res = board->blocks[idx].type != BLOCK_TYPE_NONE;
 	return res;
+}
+
+struct block *
+board_block_get(struct board *board, i32 x, i32 y)
+{
+	struct block *res = NULL;
+	i16 idx           = board_coords_to_idx(board, x, y);
+	if(idx < 0 || idx > (size)ARRLEN(board->blocks)) { return res; }
+	res = board->blocks + idx;
+	return res;
+}
+
+v2_i32
+board_idx_to_coords(struct board *board, i16 idx)
+{
+	v2_i32 res = {
+		.x = idx % board->columns,
+		.y = idx / board->columns,
+	};
+	return res;
+}
+
+v2_i32
+board_idx_to_px(struct board *board, i16 idx)
+{
+	v2_i32 coords = board_idx_to_coords(board, idx);
+	v2_i32 res    = board_coords_to_px(board, coords.x, coords.y);
+	return res;
+}
+
+i16
+board_coords_to_idx(struct board *board, i32 x, i32 y)
+{
+	i16 res = (y * board->columns) + x;
+	return res;
+}
+
+v2_i32
+board_coords_to_px(struct board *board, i32 x, i32 y)
+{
+	// top-left pixel of the tile at (x, y), with y=0 = bottom row
+	v2_i32 res = {
+		x * board->block_size,
+		(board->rows - 1 - y) * board->block_size};
+	return res;
+}
+
+v2_i32
+board_px_to_coords(struct board *board, i32 px, i32 py)
+{
+	i32 cx     = px * board->block_size_inv;
+	i32 tile_y = div_i32_floor(py, board->block_size);
+	i32 cy     = (board->rows - 1) - tile_y;
+	v2_i32 res = {cx, cy};
+	return res;
+}
+
+void
+board_drw_dbg(struct board *board)
+{
+	i32 r          = board->rows;
+	i32 c          = board->columns;
+	rec_i32 rec    = {0, 0, board->columns, board->rows};
+	rec_i32 border = rec_i32_expand(rec, 1);
+	g_color(PRIM_MODE_BLACK);
+	g_rec_fill(REC_UNPACK(rec));
+	g_color(PRIM_MODE_WHITE);
+	g_rec(REC_UNPACK(border));
+
+	g_color(PRIM_MODE_WHITE);
+	for(size i = 0; i < (size)ARRLEN(board->blocks); ++i) {
+		struct block *block = board->blocks + i;
+		if(block->type == BLOCK_TYPE_NONE) { continue; }
+		v2_i32 p = board_idx_to_coords(board, i);
+		g_px(p.x, p.y);
+	}
 }
