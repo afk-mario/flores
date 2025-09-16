@@ -2,11 +2,17 @@
 
 #include "base/types.h"
 #include "block/block-type.h"
+#include "board/board-defs.h"
+#include "frame/frame.h"
 
 struct piece {
 	b16 fast_drop;
-	i16 x;
-	i16 y;
+	v2_i32 p;
+	v2_i32 so;
+	v2_i32 o;
+	f32 ani_timestamp;
+	f32 ani_duration;
 	f32 timestamp;
 	enum block_type types[2];
+	void (*upd)(struct piece *piece, struct board *board, struct frame_info frame);
 };

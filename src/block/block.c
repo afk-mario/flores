@@ -35,8 +35,16 @@ block_drw(struct block *block, i32 x, i32 y, i16 block_size)
 
 #if BOARD_USE_SHAPES
 	g_color(PRIM_MODE_WHITE);
-	g_cir(cx, cy, r.w - 1);
+#else
+	g_color(PRIM_MODE_BLACK);
 #endif
+	g_cir_fill(cx, cy, r.w);
+#if BOARD_USE_SHAPES
+	g_color(PRIM_MODE_BLACK);
+#else
+	g_color(PRIM_MODE_WHITE);
+#endif
+	g_cir_fill(cx, cy, r.w - 3);
 
 	i32 d = w - 18;
 	g_color(PRIM_MODE_WHITE);

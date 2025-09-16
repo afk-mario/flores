@@ -60,12 +60,20 @@ scrn_game_ini(struct app *app)
 	struct board *board = &scrn->board;
 	board_ini(board, timestamp);
 	scrn->editor.type = BLOCK_TYPE_A;
+	scrn->piece       = (struct piece){0};
 
 #if defined(BOARD_FULL)
+#if BOARD_USE_SHAPES
+	i32 id = g_tex_refs_id_get(G_TEX_SHAPES);
+#else
+	i32 id = g_tex_refs_id_get(G_TEX_SEEDS);
+#endif
+	struct tex t    = asset_tex(id);
+	i32 max_type    = (t.w / board->block_size) - 1;
 	i32 block_count = BOARD_COLUMNS * BOARD_ROWS;
 	for(size i = 0; i < block_count; ++i) {
 		struct block block = {
-			.type = rndm_range_i32(NULL, BLOCK_TYPE_NONE + 1, BLOCK_TYPE_C),
+			.type = rndm_range_i32(NULL, BLOCK_TYPE_NONE + 1, max_type),
 		};
 		v2_i32 p = board_idx_to_coords(board, i);
 		board_block_set(board, block, p.x, p.y);
@@ -75,7 +83,6 @@ scrn_game_ini(struct app *app)
 	struct block block = {
 		.type = rndm_range_i32(NULL, BLOCK_TYPE_NONE + 1, BLOCK_TYPE_C),
 	};
-	board_block_set(board, block, 0, 0);
 #endif
 }
 
@@ -113,6 +120,12 @@ scrn_game_upd(struct app *app, f32 dt)
 			scrn->editor.type = BLOCK_TYPE_NONE + 3;
 		}
 		if(inp_key_just_pressed('4')) {
+			scrn->editor.type = BLOCK_TYPE_NONE + 4;
+		}
+		if(inp_key_just_pressed('5')) {
+			scrn->editor.type = BLOCK_TYPE_NONE + 5;
+		}
+		if(inp_key_just_pressed('6')) {
 			scrn->editor.type = BLOCK_TYPE_NONE + 6;
 		}
 
@@ -358,10 +371,17 @@ scrn_game_piece_spawn_rndm(struct scrn_game *scrn)
 	i32 c               = scrn->board.columns;
 	i32 r               = scrn->board.rows;
 	i32 block_size      = scrn->board.block_size;
-	piece->types[0]     = rndm_range_i32(NULL, BLOCK_TYPE_NONE + 1, BLOCK_TYPE_C);
-	piece->types[1]     = rndm_range_i32(NULL, BLOCK_TYPE_NONE + 1, BLOCK_TYPE_C);
-	piece->x            = rndm_range_i32(NULL, 0, c - 2) * block_size;
-	piece->y            = -block_size;
+#if BOARD_USE_SHAPES
+	i32 id = g_tex_refs_id_get(G_TEX_SHAPES);
+#else
+	i32 id = g_tex_refs_id_get(G_TEX_SEEDS);
+#endif
+	struct tex t    = asset_tex(id);
+	i32 max_type    = (t.w / block_size) - 1;
+	piece->types[0] = rndm_range_i32(NULL, BLOCK_TYPE_NONE + 1, max_type);
+	piece->types[1] = rndm_range_i32(NULL, BLOCK_TYPE_NONE + 1, max_type);
+	piece->p.x      = rndm_range_i32(NULL, 0, c - 2);
+	piece->p.y      = r;
 	piece_ini(piece, timestamp);
 	scrn->state = SCRN_GAME_STATE_PLAY;
 }
@@ -372,7 +392,7 @@ scrn_game_piece_set_blocks(struct scrn_game *scrn)
 	b32 res             = false;
 	struct board *board = &scrn->board;
 	struct piece *piece = &scrn->piece;
-	v2_i32 coords       = board_px_to_coords(board, piece->x, piece->y);
+	v2_i32 coords       = piece->p;
 
 	if(coords.y >= board->rows) {
 		res = true;
