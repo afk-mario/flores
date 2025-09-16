@@ -3,9 +3,17 @@
 COMPANY_NAME := afk-mario
 GAME_NAME    := flores
 DESTDIR      := build/
+DETECTED_OS  := $(shell uname -s)
+DETECTED_OS  := $(strip $(DETECTED_OS))
 
+ifeq ($(DETECTED_OS), Linux)
+all: clean linux_build
+run: linux_run
+endif
+ifeq ($(DETECTED_OS), Darwin)
 all: clean macos_build
 run: macos_run
+endif
 
 clean:
 	rm -rf $(DESTDIR)
