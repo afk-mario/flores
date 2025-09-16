@@ -6,7 +6,7 @@
 
 #define BOARD_COLUMNS    6
 #define BOARD_ROWS       8
-#define BOARD_USE_SHAPES true
+#define BOARD_USE_SHAPES false
 
 struct board {
 	i16 columns;

@@ -97,13 +97,13 @@ piece_move_x(
 	v2_i32 dest    = {piece->p.x + dx, piece->p.y};
 	b32 has_block  = board_block_has(board, dest.x, dest.y) || board_block_has(board, dest.x + 1, dest.y);
 	b32 is_wall    = dest.x < 0 || dest.x > board->columns - 2;
-	if(is_wall) {
+	if(is_wall || has_block) {
 		piece->so.x          = dx * (block_size * 0.5f);
 		piece->o.x           = piece->so.x;
 		piece->ani_timestamp = timestamp;
-		piece->ani_duration  = PIECE_ANI_DUR * 0.5f;
+		piece->ani_duration  = PIECE_ANI_DUR * 0.25f;
 		piece->upd           = piece_upd_bump;
-	} else if(!has_block) {
+	} else {
 		res                  = true;
 		piece->p             = dest;
 		piece->so.x          = -dx * block_size;
@@ -148,9 +148,9 @@ piece_upd_inp(struct piece *piece, struct board *board, struct frame_info frame)
 		dx = -1;
 	} else if(inp_just_pressed(INP_DPAD_R)) {
 		dx = 1;
-	} else if(inp_just_pressed(INP_DPAD_D)) {
+	} else if(inp_pressed(INP_DPAD_D)) {
 		if(!collides) {
-			ody = block_size;
+			ody = PIECE_GRAVITY;
 		}
 	} else if(inp_just_pressed(INP_DPAD_U)) {
 		if(!collides) {
@@ -167,7 +167,9 @@ piece_upd_inp(struct piece *piece, struct board *board, struct frame_info frame)
 	if(ody > 0) {
 		piece->o.y       = piece->o.y + ody;
 		piece->timestamp = timestamp + PIECE_WAIT;
-		if(piece->o.y >= block_size) { dy = -1; }
+		if(piece->o.y >= block_size) {
+			dy = -1;
+		}
 	}
 
 	if(dy != 0) {
