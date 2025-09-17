@@ -9,6 +9,7 @@
 
 static inline i32 piece_handle_ody(struct piece *piece, struct board *board, i32 ody, f32 timestamp);
 static inline i32 piece_get_btn(struct piece *piece);
+static inline void piece_bump(struct piece *piece, i32 direction, f32 timestamp);
 static inline void piece_do_btn(struct piece *piece, struct board *board, struct frame_info frame);
 
 void
@@ -69,12 +70,13 @@ piece_to_str(struct piece *piece, struct board *board, struct alloc alloc)
 	v2_i32 px     = board_coords_to_px(board, piece->p.x, piece->p.y);
 	str8 res      = str8_fmt_push(
         alloc,
-        "piece:%d,%d %d,%d %d %s,%s",
+        "piece:[%d,%d][%d,%d]btn:%d o.y=%d %s,%s",
         px.x,
         px.y,
         coords.x,
         coords.y,
         piece->btn_buffer,
+        piece->o.y,
         BLOCK_TYPE_LABELS[piece->types[0]].str,
         BLOCK_TYPE_LABELS[piece->types[1]].str);
 	return res;
@@ -105,12 +107,16 @@ piece_move_x(
 	b32 has_block  = board_block_has(board, dest.x, dest.y) || board_block_has(board, dest.x + 1, dest.y);
 	b32 is_wall    = dest.x < 0 || dest.x > board->columns - 2;
 
-	if(is_wall || has_block) {
-		piece->so.x          = dx * PIECE_BUMP;
-		piece->o.x           = piece->so.x;
-		piece->ani_timestamp = timestamp;
-		piece->ani_duration  = PIECE_ANI_BUMP_DUR;
-		piece->upd           = piece_upd_bump;
+	if(has_block && !is_wall) {
+		if(piece->o.y < -1 && !piece_collides(piece, board, dx, 1)) {
+			has_block  = false;
+			dest.y     = dest.y + 1;
+			piece->o.y = 0;
+		}
+	}
+
+	if(has_block || is_wall) {
+		piece_bump(piece, dx, timestamp);
 	} else {
 		if(piece_collides(piece, board, dx, -1)) {
 			piece->so.y = 0;
@@ -152,9 +158,8 @@ piece_upd_inp(struct piece *piece, struct board *board, struct frame_info frame)
 	f32 timestamp = frame.timestamp;
 	b32 time_up   = piece->timestamp < timestamp;
 
-	if(piece->btn_buffer > 0) {
-		piece_do_btn(piece, board, frame);
-	} else if(time_up) {
+	piece_do_btn(piece, board, frame);
+	if(time_up) {
 		piece_handle_ody(piece, board, PIECE_GRAVITY, timestamp);
 	}
 }
@@ -245,14 +250,8 @@ piece_get_btn(struct piece *piece)
 	i32 res   = piece->btn_buffer;
 	i32 inp[] = {INP_DPAD_U, INP_DPAD_L, INP_DPAD_R, INP_DPAD_D};
 	for(size i = 0; i < (size)ARRLEN(inp); ++i) {
-		if(inp[i] == INP_DPAD_D || inp[i] == INP_DPAD_R || inp[i] == INP_DPAD_L) {
-			if(inp_pressed(inp[i])) {
-				res = inp[i];
-			}
-		} else {
-			if(inp_just_pressed(inp[i])) {
-				res = inp[i];
-			}
+		if(inp_just_pressed(inp[i])) {
+			res = inp[i];
 		}
 	}
 	return res;
@@ -271,11 +270,11 @@ piece_do_btn(struct piece *piece, struct board *board, struct frame_info frame)
 	if(btn == INP_DPAD_U) {
 		piece->fast_drop = true;
 		piece->upd       = piece_upd_drop;
-	} else if(btn == INP_DPAD_L) {
+	} else if(btn == INP_DPAD_L || inp_pressed(INP_DPAD_L)) {
 		dx = -1;
-	} else if(btn == INP_DPAD_R) {
+	} else if(btn == INP_DPAD_R || inp_pressed(INP_DPAD_R)) {
 		dx = 1;
-	} else if(btn == INP_DPAD_D) {
+	} else if(btn == INP_DPAD_D || inp_pressed(INP_DPAD_D)) {
 		if(collides) {
 			piece->o.y = 0;
 		} else {
@@ -286,4 +285,14 @@ piece_do_btn(struct piece *piece, struct board *board, struct frame_info frame)
 	if(dx != 0) {
 		b32 did_move = piece_move_x(piece, board, dx, timestamp);
 	}
+}
+
+static inline void
+piece_bump(struct piece *piece, i32 direction, f32 timestamp)
+{
+	piece->so.x          = direction * PIECE_BUMP;
+	piece->o.x           = piece->so.x;
+	piece->ani_timestamp = timestamp;
+	piece->ani_duration  = PIECE_ANI_BUMP_DUR;
+	piece->upd           = piece_upd_bump;
 }
