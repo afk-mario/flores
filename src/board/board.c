@@ -2,9 +2,11 @@
 #include "base/log.h"
 #include "base/rec.h"
 #include "base/types.h"
+#include "base/v2.h"
 #include "block/block-type.h"
 #include "block/block.h"
 #include "globals/g-gfx.h"
+#include "piece/piece-defs.h"
 #include "scrns/scrn-game/scrn-game-data.h"
 
 void
@@ -36,8 +38,9 @@ board_upd(struct board *board, struct frame_info frame)
 void
 board_drw(struct board *board, enum game_theme theme)
 {
-	i32 r = board->rows;
-	i32 c = board->columns;
+	i32 r          = board->rows;
+	i32 c          = board->columns;
+	i32 block_size = board->block_size;
 
 	{
 		enum prim_mode bg = GAME_BOARD_BG[theme];
@@ -47,6 +50,31 @@ board_drw(struct board *board, enum game_theme theme)
 			-1 * board->block_size,
 			board->columns * board->block_size,
 			(board->rows + 1) * board->block_size);
+	}
+
+	g_color(PRIM_MODE_BLACK);
+	for(size i = 0; i < (size)ARRLEN(board->blocks); ++i) {
+		struct block *block = board->blocks + i;
+		if(block->type == BLOCK_TYPE_NONE) { continue; }
+		v2_i32 p      = board_idx_to_px(board, i);
+		v2_i32 coords = board_idx_to_coords(board, i);
+
+		for(size j = 0; j < (size)ARRLEN(PIECE_ROTATIONS); ++j) {
+			v2_i32 rotation     = PIECE_ROTATIONS[j];
+			v2_i32 other_coords = v2_add_i32(coords, rotation);
+			i32 other_id        = board_coords_to_idx(board, other_coords.x, other_coords.y);
+			if(other_id > -1) {
+				struct block *other_block = board->blocks + other_id;
+				if(block->type == other_block->type) {
+					v2_i32 un_offset = {rotation.x * (block_size * 0.5f), -rotation.y * (block_size * 0.5f)};
+					v2_i32 cir_p     = v2_add_i32(p, (v2_i32){block_size * 0.5f, block_size * 0.5f});
+					cir_p            = v2_add_i32(cir_p, un_offset);
+					g_cir_fill(cir_p.x, cir_p.y, 10);
+				}
+			}
+		}
+
+		// block_drw(block, theme, p.x, p.y, board->block_size);
 	}
 
 	for(size i = 0; i < (size)ARRLEN(board->blocks); ++i) {
@@ -120,7 +148,10 @@ board_idx_to_px(struct board *board, i16 idx)
 i16
 board_coords_to_idx(struct board *board, i32 x, i32 y)
 {
-	i16 res = (y * board->columns) + x;
+	i16 res = -1;
+	if(y < 0 || x < 0) { return res; }
+	res = (y * board->columns) + x;
+	if(res > (size)ARRLEN(board->blocks)) { return res = -1; }
 	return res;
 }
 

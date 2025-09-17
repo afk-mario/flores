@@ -50,13 +50,15 @@ piece_upd(struct piece *piece, struct board *board, struct frame_info frame)
 void
 piece_drw(struct piece *piece, struct board *board, enum game_theme theme)
 {
-	i32 block_size  = board->block_size;
-	v2_i32 px       = board_coords_to_px(board, piece->p.x, piece->p.y);
-	v2_i32 px_o     = v2_add_i32(px, piece->o);
-	struct block a  = {.type = piece->types[0], .state = 1};
-	struct block b  = {.type = piece->types[1], .state = 1};
-	v2_i32 rotation = PIECE_ROTATIONS[piece->rot];
-	v2_i32 b_offset = {rotation.x * block_size, -rotation.y * block_size};
+	i32 block_size   = board->block_size;
+	v2_i32 px        = board_coords_to_px(board, piece->p.x, piece->p.y);
+	v2_i32 px_o      = v2_add_i32(px, piece->o);
+	struct block a   = {.type = piece->types[0], .state = 1};
+	struct block b   = {.type = piece->types[1], .state = 1};
+	v2_i32 rotation  = PIECE_ROTATIONS[piece->rot];
+	f32 block_size_h = block_size / 2;
+	v2_i32 b_offset  = {rotation.x * block_size, -rotation.y * block_size};
+	v2_i32 un_offset = {rotation.x * (block_size * 0.5f), -rotation.y * (block_size * 0.5f)};
 
 #if DEBUG
 	g_pat(gfx_pattern_50());
@@ -65,6 +67,13 @@ piece_drw(struct piece *piece, struct board *board, enum game_theme theme)
 #endif
 
 	g_pat(gfx_pattern_100());
+
+	if(piece->types[0] == piece->types[1]) {
+		g_color(PRIM_MODE_BLACK);
+		g_cir_fill((px_o.x + block_size_h) + un_offset.x, (px_o.y + block_size_h) + un_offset.y, 10);
+		debug_draw_cir((px_o.x + block_size_h) + un_offset.x, (px_o.y + block_size_h) + un_offset.y, 10);
+	}
+
 	debug_draw_rec(px_o.x, px_o.y, block_size, block_size);
 	block_drw(&a, theme, px_o.x, px_o.y, block_size);
 	block_drw(&b, theme, px_o.x + b_offset.x, px_o.y + b_offset.y, block_size);
