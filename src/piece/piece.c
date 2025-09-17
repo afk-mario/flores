@@ -357,24 +357,37 @@ piece_rotate(
 	i32 direction,
 	struct frame_info frame)
 {
+	i32 block_size   = board->block_size;
+	f32 timestamp    = frame.timestamp;
 	v2_i32 coords    = piece->p;
 	i32 rot_idx_dest = mod_euc_i32(piece->rot + direction, ARRLEN(PIECE_ROTATIONS));
 	v2_i32 rot       = PIECE_ROTATIONS[rot_idx_dest];
-	v2_i32 dest      = {piece->p.x + rot.x, piece->p.y + rot.y};
-	b32 is_wall_x    = dest.x < 0;
-	is_wall_x        = is_wall_x || dest.x > board->columns - 1;
-	b32 is_wall_y    = dest.y < 0;
+	v2_i32 rot_dest  = {piece->p.x + rot.x, piece->p.y + rot.y};
+	b32 is_block_x   = board_block_has(board, rot_dest.x, coords.y);
+	b32 is_block_y   = board_block_has(board, coords.x, rot_dest.y);
+	b32 is_wall_x    = board_is_wall_x(board, rot_dest.x);
+	b32 is_wall_y    = board_is_wall_y(board, rot_dest.y);
+	i32 dx           = 0;
+	i32 dy           = 0;
 
-	if(is_wall_x) {
-		if(dest.x < 0) {
-			piece->p.x += 1;
-			piece->rot = rot_idx_dest;
+	if(is_wall_x || is_block_x) {
+		if(rot_dest.x < coords.x) {
+			dx = 1;
 		} else {
-			piece->p.x -= 1;
-			piece->rot = rot_idx_dest;
+			dx = -1;
 		}
-	} else if(is_wall_y) {
-	} else {
+	} else if(is_wall_y || is_block_y) {
+		dy = 1;
+	}
+
+	v2_i32 dest   = {piece->p.x + dx, piece->p.y + dy};
+	b32 col_wall  = piece_collides_wall(piece, board, dx, dy);
+	b32 col_block = piece_collides_block(piece, board, dx, dy);
+
+	if(!col_wall && !col_block) {
+		piece->p   = dest;
 		piece->rot = rot_idx_dest;
+		if(dx == 0 && dy == 0) {
+		}
 	}
 }

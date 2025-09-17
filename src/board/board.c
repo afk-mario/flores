@@ -175,6 +175,27 @@ board_px_to_coords(struct board *board, i32 px, i32 py)
 	return res;
 }
 
+b32
+board_is_wall_x(struct board *board, i32 x)
+{
+	b32 res = x < 0 || x > board->columns - 1;
+	return res;
+}
+
+b32
+board_is_wall_y(struct board *board, i32 y)
+{
+	b32 res = y < 0;
+	return res;
+}
+
+b32
+board_is_wall(struct board *board, i32 x, i32 y)
+{
+	b32 res = board_is_wall_x(board, x) || board_is_wall_y(board, y);
+	return res;
+}
+
 void
 board_drw_dbg(struct board *board)
 {

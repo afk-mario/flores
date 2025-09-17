@@ -21,3 +21,7 @@ i16 board_coords_to_idx(struct board *board, i32 x, i32 y);
 v2_i32 board_coords_to_px(struct board *board, i32 x, i32 y);
 v2_i32 board_px_to_coords(struct board *board, i32 x, i32 y);
 // v2_i32 board_px_to_idx(struct board *board, i32 x, i32 y);
+
+b32 board_is_wall(struct board *board, i32 x, i32 y);
+b32 board_is_wall_x(struct board *board, i32 x);
+b32 board_is_wall_y(struct board *board, i32 y);
