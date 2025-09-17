@@ -302,12 +302,12 @@ scrn_game_drw_hud(struct scrn_game *scrn)
 			struct block block = {.type = BLOCK_TYPE_A};
 			block_drw(&block, theme, x, y, block_size);
 		}
-		{
-			i32 id                 = g_tex_refs_id_get(G_TEX_ACORN);
-			struct tex t           = asset_tex(id);
-			struct tex_rec tex_rec = asset_tex_rec(id, 0, 0, t.w, t.h);
-			g_spr_piv(tex_rec, cntr.x, cntr.y, 0, (v2){0.5f, 0.5f});
-		}
+		// {
+		// 	i32 id                 = g_tex_refs_id_get(G_TEX_ACORN);
+		// 	struct tex t           = asset_tex(id);
+		// 	struct tex_rec tex_rec = asset_tex_rec(id, 0, 0, t.w, t.h);
+		// 	g_spr_piv(tex_rec, cntr.x, cntr.y, 0, (v2){0.5f, 0.5f});
+		// }
 	}
 	rec_i32_cut_top(&root, margin);
 	{

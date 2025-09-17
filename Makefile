@@ -189,3 +189,9 @@ win_publish:
 		DESTDIR=$(DESTDIR) \
 		GAME_NAME=$(GAME_NAME) \
 		CDEFS="-DSYS_LOG_LEVEL=2 -DDEV=1"
+
+ifeq ($(DETECTED_OS), Darwin)
+publish_all: linux_publish www_publish pd_publish macos_publish
+else
+publish_all: linux_publish www_publish pd_publish
+endif

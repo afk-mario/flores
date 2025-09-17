@@ -1,4 +1,5 @@
 #include "piece.h"
+#include "base/mathfunc.h"
 #include "base/types.h"
 #include "base/v2.h"
 #include "block/block.h"
@@ -106,6 +107,7 @@ piece_move_x(
 	v2_i32 dest    = {piece->p.x + dx, piece->p.y};
 	b32 has_block  = board_block_has(board, dest.x, dest.y) || board_block_has(board, dest.x + 1, dest.y);
 	b32 is_wall    = dest.x < 0 || dest.x > board->columns - 2;
+	b32 collides   = piece_collides(piece, board, dx, -1);
 
 	if(has_block && !is_wall) {
 		if(piece->o.y < -1 && !piece_collides(piece, board, dx, 1)) {
@@ -117,6 +119,9 @@ piece_move_x(
 
 	if(has_block || is_wall) {
 		piece_bump(piece, dx, timestamp);
+		if(collides) {
+			piece->timestamp = 0;
+		}
 	} else {
 		if(piece_collides(piece, board, dx, -1)) {
 			piece->so.y = 0;
@@ -132,6 +137,7 @@ piece_move_x(
 		piece->ani_timestamp = timestamp;
 		piece->ani_duration  = PIECE_ANI_MOVE_DUR;
 		piece->upd           = piece_upd_move_x;
+		piece->timestamp     = timestamp + PIECE_WAIT;
 	}
 	return res;
 }
