@@ -14,6 +14,10 @@ enum block_type {
   BLOCK_TYPE_D,
   BLOCK_TYPE_E,
   BLOCK_TYPE_F,
+  BLOCK_TYPE_G,
+  BLOCK_TYPE_H,
+  BLOCK_TYPE_I,
+  BLOCK_TYPE_J,
 
   BLOCK_TYPE_NUM_COUNT,
 };
@@ -27,9 +31,13 @@ static const str8 BLOCK_TYPE_LABELS[BLOCK_TYPE_NUM_COUNT] = {
   [BLOCK_TYPE_D] = str8_lit_comp("D"),
   [BLOCK_TYPE_E] = str8_lit_comp("E"),
   [BLOCK_TYPE_F] = str8_lit_comp("F"),
+  [BLOCK_TYPE_G] = str8_lit_comp("G"),
+  [BLOCK_TYPE_H] = str8_lit_comp("H"),
+  [BLOCK_TYPE_I] = str8_lit_comp("I"),
+  [BLOCK_TYPE_J] = str8_lit_comp("J"),
 };
 
-static u8 BLOCK_TYPE_BITMASKS[7] = {
+static u16 BLOCK_TYPE_BITMASKS[11] = {
   [BLOCK_TYPE_NONE] = 0,
   [BLOCK_TYPE_A] = 2,
   [BLOCK_TYPE_B] = 4,
@@ -37,5 +45,9 @@ static u8 BLOCK_TYPE_BITMASKS[7] = {
   [BLOCK_TYPE_D] = 16,
   [BLOCK_TYPE_E] = 32,
   [BLOCK_TYPE_F] = 64,
+  [BLOCK_TYPE_G] = 128,
+  [BLOCK_TYPE_H] = 256,
+  [BLOCK_TYPE_I] = 512,
+  [BLOCK_TYPE_J] = 1024,
 };
 

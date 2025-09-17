@@ -1,10 +1,11 @@
 #pragma once
 
 #include "piece-defs.h"
+#include "scrns/scrn-game/scrn-game-theme.h"
 
 void piece_ini(struct piece *piece, f32 timestamp);
 b32 piece_upd(struct piece *piece, struct board *board, struct frame_info frame);
-void piece_drw(struct piece *piece, struct board *board);
+void piece_drw(struct piece *piece, struct board *board, enum game_theme theme);
 str8 piece_to_str(struct piece *piece, struct board *board, struct alloc alloc);
 
 b32 piece_move_x(struct piece *piece, struct board *board, i32 dx, f32 timestamp);

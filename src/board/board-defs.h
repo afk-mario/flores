@@ -4,9 +4,8 @@
 
 #include "block/block-defs.h"
 
-#define BOARD_COLUMNS    6
-#define BOARD_ROWS       8
-#define BOARD_USE_SHAPES false
+#define BOARD_COLUMNS 6
+#define BOARD_ROWS    8
 
 struct board {
 	i16 columns;

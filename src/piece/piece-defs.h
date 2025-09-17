@@ -6,6 +6,7 @@
 #include "frame/frame.h"
 
 struct piece {
+	i32 btn_buffer;
 	b16 fast_drop;
 	v2_i32 p;
 	v2_i32 so;

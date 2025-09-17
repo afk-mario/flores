@@ -12,14 +12,16 @@ enum g_tex_id {
 	G_TEX_SEEDS,
 	G_TEX_SHAPES,
 	G_TEX_ACORN,
+	G_TEX_ABSTRACT_SEEDS,
 
 	G_TEX_NUM_COUNT,
 };
 
 static const str8 G_TEX_PATH_MAP[G_TEX_NUM_COUNT] = {
-	[G_TEX_SEEDS]  = str8_lit_comp("assets/imgs/seeds.tex"),
-	[G_TEX_SHAPES] = str8_lit_comp("assets/imgs/shapes.tex"),
-	[G_TEX_ACORN]  = str8_lit_comp("assets/imgs/avellana.tex"),
+	[G_TEX_SEEDS]          = str8_lit_comp("assets/imgs/seeds.tex"),
+	[G_TEX_SHAPES]         = str8_lit_comp("assets/imgs/shapes.tex"),
+	[G_TEX_ACORN]          = str8_lit_comp("assets/imgs/avellana.tex"),
+	[G_TEX_ABSTRACT_SEEDS] = str8_lit_comp("assets/imgs/abstract-seeds.tex"),
 };
 
 static i32 G_TEX_IDS[G_TEX_NUM_COUNT];

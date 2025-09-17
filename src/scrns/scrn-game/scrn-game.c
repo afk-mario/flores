@@ -18,6 +18,7 @@
 #include "globals/g-tex-refs.h"
 #include "lib/rndm.h"
 #include "piece/piece.h"
+#include "scrns/scrn-game/scrn-game-data.h"
 #include "sys/sys.h"
 
 #include "block/block-defs.h"
@@ -61,16 +62,14 @@ scrn_game_ini(struct app *app)
 	board_ini(board, timestamp);
 	scrn->editor.type = BLOCK_TYPE_A;
 	scrn->piece       = (struct piece){0};
+	scrn->theme       = GAME_THEME;
 
 #if defined(BOARD_FULL)
-#if BOARD_USE_SHAPES
-	i32 id = g_tex_refs_id_get(G_TEX_SHAPES);
-#else
-	i32 id = g_tex_refs_id_get(G_TEX_SEEDS);
-#endif
-	struct tex t    = asset_tex(id);
-	i32 max_type    = (t.w / board->block_size) - 1;
-	i32 block_count = BOARD_COLUMNS * BOARD_ROWS;
+	enum g_tex_id ref = GAME_THEME_REFS[scrn->theme];
+	i32 id            = g_tex_refs_id_get(ref);
+	struct tex t      = asset_tex(id);
+	i32 max_type      = (t.w / board->block_size) - 1;
+	i32 block_count   = BOARD_COLUMNS * BOARD_ROWS;
 	for(size i = 0; i < block_count; ++i) {
 		struct block block = {
 			.type = rndm_range_i32(NULL, BLOCK_TYPE_NONE + 1, max_type),
@@ -272,6 +271,7 @@ scrn_game_drw_hud(struct scrn_game *scrn)
 	i32 margin             = 8;
 	rec_i32 root           = rec_i32_anchor(APP_SCRN_REC, (rec_i32){.w = hud_w, .h = hud_h}, (v2){0.5f, 0.5f});
 	rec_i32 inset          = rec_i32_inset_x(root, 2);
+	enum game_theme theme  = scrn->theme;
 
 	g_color(PRIM_MODE_BLACK);
 	g_rec_fill(root.x, root.y, root.w, root.h);
@@ -300,7 +300,7 @@ scrn_game_drw_hud(struct scrn_game *scrn)
 			i32 x              = cntr.x - (block_size * 0.5f);
 			i32 y              = cntr.y - (block_size * 0.5f);
 			struct block block = {.type = BLOCK_TYPE_A};
-			block_drw(&block, x, y, block_size);
+			block_drw(&block, theme, x, y, block_size);
 		}
 		{
 			i32 id                 = g_tex_refs_id_get(G_TEX_ACORN);
@@ -334,8 +334,10 @@ scrn_game_drw_game(struct scrn_game *scrn)
 {
 	struct piece *piece = &scrn->piece;
 	struct board *board = &scrn->board;
-	board_drw(board);
-	piece_drw(piece, board);
+	board_drw(board, scrn->theme);
+	if(piece->types[0] != 0) {
+		piece_drw(piece, board, scrn->theme);
+	}
 
 	switch(scrn->state) {
 	case SCRN_GAME_STATE_PLAY: {
@@ -371,17 +373,14 @@ scrn_game_piece_spawn_rndm(struct scrn_game *scrn)
 	i32 c               = scrn->board.columns;
 	i32 r               = scrn->board.rows;
 	i32 block_size      = scrn->board.block_size;
-#if BOARD_USE_SHAPES
-	i32 id = g_tex_refs_id_get(G_TEX_SHAPES);
-#else
-	i32 id = g_tex_refs_id_get(G_TEX_SEEDS);
-#endif
-	struct tex t    = asset_tex(id);
-	i32 max_type    = (t.w / block_size) - 1;
-	piece->types[0] = rndm_range_i32(NULL, BLOCK_TYPE_NONE + 1, max_type);
-	piece->types[1] = rndm_range_i32(NULL, BLOCK_TYPE_NONE + 1, max_type);
-	piece->p.x      = rndm_range_i32(NULL, 0, c - 2);
-	piece->p.y      = r;
+	enum g_tex_id ref   = GAME_THEME_REFS[scrn->theme];
+	i32 id              = g_tex_refs_id_get(ref);
+	struct tex t        = asset_tex(id);
+	i32 max_type        = (t.w / block_size) - 1;
+	piece->types[0]     = rndm_range_i32(NULL, BLOCK_TYPE_NONE + 1, max_type);
+	piece->types[1]     = rndm_range_i32(NULL, BLOCK_TYPE_NONE + 1, max_type);
+	piece->p.x          = rndm_range_i32(NULL, 0, c - 2);
+	piece->p.y          = r;
 	piece_ini(piece, timestamp);
 	scrn->state = SCRN_GAME_STATE_PLAY;
 }

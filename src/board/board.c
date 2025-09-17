@@ -5,6 +5,7 @@
 #include "block/block-type.h"
 #include "block/block.h"
 #include "globals/g-gfx.h"
+#include "scrns/scrn-game/scrn-game-data.h"
 
 void
 board_ini(struct board *board, f32 timestamp)
@@ -33,17 +34,14 @@ board_upd(struct board *board, struct frame_info frame)
 }
 
 void
-board_drw(struct board *board)
+board_drw(struct board *board, enum game_theme theme)
 {
 	i32 r = board->rows;
 	i32 c = board->columns;
 
 	{
-#if BOARD_USE_SHAPES
-		g_color(PRIM_MODE_BLACK);
-#else
-		g_color(PRIM_MODE_WHITE);
-#endif
+		enum prim_mode bg = GAME_BOARD_BG[theme];
+		g_color(bg);
 		g_rec_fill(
 			0,
 			-1 * board->block_size,
@@ -55,7 +53,7 @@ board_drw(struct board *board)
 		struct block *block = board->blocks + i;
 		if(block->type == BLOCK_TYPE_NONE) { continue; }
 		v2_i32 p = board_idx_to_px(board, i);
-		block_drw(block, p.x, p.y, board->block_size);
+		block_drw(block, theme, p.x, p.y, board->block_size);
 	}
 }
 

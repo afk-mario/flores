@@ -1,0 +1,11 @@
+{
+  "name": "game_theme",
+  "prefix": "GAME_THEME_",
+  "columns": ["id", "label"],
+  "elements": [
+    "SHAPES",
+    "SEEDS",
+    "ABSTRACT",
+  ]
+}
+
