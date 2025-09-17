@@ -1,16 +1,6 @@
-# 16
-
-- Input buffering
-  - If there is a button press during animation save it and replay it when animation is finished.
-- Corner correction
-  - Check if the piece can move left or right by going up or down
-    and choose that
-- Last minute move timer and upd
-  - New upd function when the piece is touching another piece at the bottom were you have some time to move the piece.
-  - It resets every time you move right or left sucessufully
-
 # 17
 
+- Check fast speed game, should work the same (slide horiztonally)
 - Rotate piece
 - Manually pieces with two blocks in different orientation collision detection
 - Press A rotate clockwise press B rotate anti clock wise
