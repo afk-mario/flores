@@ -3,7 +3,7 @@
 #include "globals/g-tex-refs.h"
 #include "scrns/scrn-game/scrn-game-theme.h"
 
-#define GAME_THEME GAME_THEME_ABSTRACT
+#define GAME_THEME GAME_THEME_SHAPES
 
 static const enum prim_mode GAME_BOARD_BG[GAME_THEME_NUM_COUNT] = {
 	[GAME_THEME_SHAPES]   = PRIM_MODE_BLACK,

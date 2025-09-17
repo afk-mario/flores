@@ -187,11 +187,13 @@ scrn_game_drw(struct app *app)
 		board_drw_dbg(&scrn->board);
 	}
 	g_drw_offset(board_offset.x, board_offset.y);
+	debug_draw_set_offset(board_offset.x, board_offset.y);
 	scrn_game_drw_game(scrn);
+	debug_draw_set_offset(0, 0);
+	g_drw_offset(0, 0);
 
 #if DEBUG
 	{
-		g_drw_offset(0, 0);
 		struct str_join params = {.sep = str8_lit(" ")};
 		struct str8_list list  = {0};
 		v2_i32 offset          = board_offset;
@@ -392,13 +394,18 @@ scrn_game_piece_set_blocks(struct scrn_game *scrn)
 	struct board *board = &scrn->board;
 	struct piece *piece = &scrn->piece;
 	v2_i32 coords       = piece->p;
+	v2_i32 rot          = PIECE_ROTATIONS[piece->rot];
 
 	if(coords.y >= board->rows) {
 		res = true;
 	} else {
 		for(size i = 0; i < (size)ARRLEN(piece->types); ++i) {
 			struct block block = {.type = piece->types[i]};
-			board_block_set(board, block, coords.x + i, coords.y);
+			board_block_set(
+				board,
+				block,
+				coords.x + (rot.x * i),
+				coords.y + (rot.y * i));
 		}
 	}
 	return res;

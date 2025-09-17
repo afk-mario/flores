@@ -5,7 +5,10 @@
 #include "board/board-defs.h"
 #include "frame/frame.h"
 
+static const v2_i32 PIECE_ROTATIONS[] = {{1, 0}, {0, -1}, {-1, 0}, {0, 1}};
+
 struct piece {
+	i32 rot;
 	i32 btn_buffer;
 	b16 fast_drop;
 	v2_i32 p;

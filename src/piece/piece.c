@@ -4,6 +4,7 @@
 #include "base/v2.h"
 #include "block/block.h"
 #include "board/board.h"
+#include "engine/debug-draw/debug-draw.h"
 #include "engine/input.h"
 #include "globals/g-gfx.h"
 #include "piece/piece-data.h"
@@ -12,12 +13,14 @@ static inline i32 piece_handle_ody(struct piece *piece, struct board *board, i32
 static inline i32 piece_get_btn(struct piece *piece);
 static inline void piece_bump(struct piece *piece, i32 direction, f32 timestamp);
 static inline void piece_do_btn(struct piece *piece, struct board *board, struct frame_info frame);
+static inline void piece_rotate(struct piece *piece, struct board *board, i32 direction, struct frame_info frame);
 
 void
 piece_ini(struct piece *piece, f32 timestamp)
 {
 	piece->timestamp = timestamp + PIECE_WAIT;
 	piece->upd       = piece_upd_inp;
+	piece->rot       = 0;
 }
 
 b32
@@ -47,51 +50,58 @@ piece_upd(struct piece *piece, struct board *board, struct frame_info frame)
 void
 piece_drw(struct piece *piece, struct board *board, enum game_theme theme)
 {
-	i32 block_size = board->block_size;
-	v2_i32 px      = board_coords_to_px(board, piece->p.x, piece->p.y);
-	v2_i32 px_o    = v2_add_i32(px, piece->o);
-	struct block a = {.type = piece->types[0], .state = 1};
-	struct block b = {.type = piece->types[1], .state = 1};
+	i32 block_size  = board->block_size;
+	v2_i32 px       = board_coords_to_px(board, piece->p.x, piece->p.y);
+	v2_i32 px_o     = v2_add_i32(px, piece->o);
+	struct block a  = {.type = piece->types[0], .state = 1};
+	struct block b  = {.type = piece->types[1], .state = 1};
+	v2_i32 rotation = PIECE_ROTATIONS[piece->rot];
+	v2_i32 b_offset = {rotation.x * block_size, -rotation.y * block_size};
 
 #if DEBUG
 	g_pat(gfx_pattern_50());
 	block_drw(&a, theme, px.x, px.y, block_size);
-	block_drw(&b, theme, px.x + block_size, px.y, block_size);
+	block_drw(&b, theme, px.x + b_offset.x, px.y + b_offset.y, block_size);
 #endif
 
 	g_pat(gfx_pattern_100());
+	debug_draw_rec(px_o.x, px_o.y, block_size, block_size);
 	block_drw(&a, theme, px_o.x, px_o.y, block_size);
-	block_drw(&b, theme, px_o.x + block_size, px_o.y, block_size);
+	block_drw(&b, theme, px_o.x + b_offset.x, px_o.y + b_offset.y, block_size);
 }
 
-str8
-piece_to_str(struct piece *piece, struct board *board, struct alloc alloc)
+b32
+piece_collides_wall(struct piece *piece, struct board *board, i32 dx, i32 dy)
 {
-	v2_i32 coords = piece->p;
-	v2_i32 px     = board_coords_to_px(board, piece->p.x, piece->p.y);
-	str8 res      = str8_fmt_push(
-        alloc,
-        "piece:[%d,%d][%d,%d]btn:%d o.y=%d %s,%s",
-        px.x,
-        px.y,
-        coords.x,
-        coords.y,
-        piece->btn_buffer,
-        piece->o.y,
-        BLOCK_TYPE_LABELS[piece->types[0]].str,
-        BLOCK_TYPE_LABELS[piece->types[1]].str);
-	return res;
+	b32 res     = false;
+	v2_i32 dest = {piece->p.x + dx, piece->p.y + dy};
+	v2_i32 rot  = PIECE_ROTATIONS[piece->rot];
+	b32 is_wall = dest.x < 0;
+	is_wall     = is_wall || dest.x > board->columns - 1;
+	is_wall     = is_wall || (dest.x + rot.x) < 0;
+	is_wall     = is_wall || (dest.x + rot.x) > board->columns - 1;
+	is_wall     = is_wall || dest.y < 0;
+	is_wall     = is_wall || (dest.y + rot.y) < 0;
+	return is_wall;
+}
+
+b32
+piece_collides_block(struct piece *piece, struct board *board, i32 dx, i32 dy)
+{
+	b32 res       = false;
+	v2_i32 dest   = {piece->p.x + dx, piece->p.y + dy};
+	v2_i32 rot    = PIECE_ROTATIONS[piece->rot];
+	b32 has_block = board_block_has(board, dest.x, dest.y);
+	has_block     = has_block || board_block_has(board, dest.x + rot.x, dest.y + rot.y);
+	return has_block;
 }
 
 b32
 piece_collides(struct piece *piece, struct board *board, i32 dx, i32 dy)
 {
-	b32 res        = false;
-	i32 block_size = board->block_size;
-	v2_i32 dest    = {piece->p.x + dx, piece->p.y + dy};
-	b32 has_block  = board_block_has(board, dest.x, dest.y) || board_block_has(board, dest.x + 1, dest.y);
-	b32 is_wall    = dest.x < 0 || dest.x > board->columns - 2;
-	is_wall        = is_wall || dest.y < 0;
+	b32 res       = false;
+	b32 has_block = piece_collides_block(piece, board, dx, dy);
+	b32 is_wall   = piece_collides_wall(piece, board, dx, dy);
 	return has_block || is_wall;
 }
 
@@ -105,21 +115,21 @@ piece_move_x(
 	b32 res        = false;
 	i32 block_size = board->block_size;
 	v2_i32 dest    = {piece->p.x + dx, piece->p.y};
-	b32 has_block  = board_block_has(board, dest.x, dest.y) || board_block_has(board, dest.x + 1, dest.y);
-	b32 is_wall    = dest.x < 0 || dest.x > board->columns - 2;
-	b32 collides   = piece_collides(piece, board, dx, -1);
+	b32 col_block  = piece_collides_block(piece, board, dx, 0);
+	b32 col_wall   = piece_collides_wall(piece, board, dx, 0);
+	b32 col_down   = piece_collides(piece, board, dx, -1);
 
-	if(has_block && !is_wall) {
+	if(col_block && !col_wall) {
 		if(piece->o.y < -1 && !piece_collides(piece, board, dx, 1)) {
-			has_block  = false;
+			col_block  = false;
 			dest.y     = dest.y + 1;
 			piece->o.y = 0;
 		}
 	}
 
-	if(has_block || is_wall) {
+	if(col_block || col_wall) {
 		piece_bump(piece, dx, timestamp);
-		if(collides) {
+		if(col_down) {
 			piece->timestamp = 0;
 		}
 	} else {
@@ -148,10 +158,11 @@ piece_move_y(struct piece *piece, struct board *board, i32 dy, f32 timestamp)
 	b32 res        = false;
 	i32 block_size = board->block_size;
 	v2_i32 dest    = {piece->p.x, piece->p.y + dy};
-	b32 has_block  = board_block_has(board, dest.x, dest.y) || board_block_has(board, dest.x + 1, dest.y);
-	b32 is_wall    = dest.y < 0;
-	if(is_wall) {
-	} else if(!has_block) {
+	v2_i32 rot     = PIECE_ROTATIONS[piece->rot];
+	b32 col_block  = piece_collides_block(piece, board, 0, dy);
+	b32 col_wall   = piece_collides_wall(piece, board, 0, dy);
+	if(col_wall) {
+	} else if(!col_block) {
 		res      = true;
 		piece->p = dest;
 	}
@@ -254,7 +265,7 @@ static inline i32
 piece_get_btn(struct piece *piece)
 {
 	i32 res   = piece->btn_buffer;
-	i32 inp[] = {INP_DPAD_U, INP_DPAD_L, INP_DPAD_R, INP_DPAD_D};
+	i32 inp[] = {INP_DPAD_U, INP_DPAD_L, INP_DPAD_R, INP_DPAD_D, INP_A, INP_B};
 	for(size i = 0; i < (size)ARRLEN(inp); ++i) {
 		if(inp_just_pressed(inp[i])) {
 			res = inp[i];
@@ -276,6 +287,10 @@ piece_do_btn(struct piece *piece, struct board *board, struct frame_info frame)
 	if(btn == INP_DPAD_U) {
 		piece->fast_drop = true;
 		piece->upd       = piece_upd_drop;
+	} else if(btn == INP_A) {
+		piece_rotate(piece, board, 1, frame);
+	} else if(btn == INP_B) {
+		piece_rotate(piece, board, -1, frame);
 	} else if(btn == INP_DPAD_L || inp_pressed(INP_DPAD_L)) {
 		dx = -1;
 	} else if(btn == INP_DPAD_R || inp_pressed(INP_DPAD_R)) {
@@ -301,4 +316,56 @@ piece_bump(struct piece *piece, i32 direction, f32 timestamp)
 	piece->ani_timestamp = timestamp;
 	piece->ani_duration  = PIECE_ANI_BUMP_DUR;
 	piece->upd           = piece_upd_bump;
+}
+
+str8
+piece_to_str(struct piece *piece, struct board *board, struct alloc alloc)
+{
+	v2_i32 coords = piece->p;
+	v2_i32 px     = board_coords_to_px(board, piece->p.x, piece->p.y);
+	v2_i32 rot    = PIECE_ROTATIONS[piece->rot];
+	str8 res      = str8_fmt_push(
+        alloc,
+        "piece:[%d,%d][%03d,%03d]\nbtn:%d\no.y=%d\nrot=%d[%d,%d]\n%s,%s",
+        coords.x,
+        coords.y,
+        px.x,
+        px.y,
+        piece->btn_buffer,
+        piece->o.y,
+        piece->rot,
+        rot.x,
+        rot.y,
+        BLOCK_TYPE_LABELS[piece->types[0]].str,
+        BLOCK_TYPE_LABELS[piece->types[1]].str);
+	return res;
+}
+
+static inline void
+piece_rotate(
+	struct piece *piece,
+	struct board *board,
+	i32 direction,
+	struct frame_info frame)
+{
+	v2_i32 coords    = piece->p;
+	i32 rot_idx_dest = mod_euc_i32(piece->rot + direction, ARRLEN(PIECE_ROTATIONS));
+	v2_i32 rot       = PIECE_ROTATIONS[rot_idx_dest];
+	v2_i32 dest      = {piece->p.x + rot.x, piece->p.y + rot.y};
+	b32 is_wall_x    = dest.x < 0;
+	is_wall_x        = is_wall_x || dest.x > board->columns - 1;
+	b32 is_wall_y    = dest.y < 0;
+
+	if(is_wall_x) {
+		if(dest.x < 0) {
+			piece->p.x += 1;
+			piece->rot = rot_idx_dest;
+		} else {
+			piece->p.x -= 1;
+			piece->rot = rot_idx_dest;
+		}
+	} else if(is_wall_y) {
+	} else {
+		piece->rot = rot_idx_dest;
+	}
 }
