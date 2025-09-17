@@ -8,12 +8,14 @@
 static const v2_i32 PIECE_ROTATIONS[] = {{1, 0}, {0, -1}, {-1, 0}, {0, 1}};
 
 struct piece {
-	i32 rot;
 	i32 btn_buffer;
 	b16 fast_drop;
 	v2_i32 p;
 	v2_i32 so;
 	v2_i32 o;
+	i32 rot;
+	f32 s_angle;
+	f32 angle;
 	f32 ani_timestamp;
 	f32 ani_duration;
 	f32 timestamp;

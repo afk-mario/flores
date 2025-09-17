@@ -17,3 +17,4 @@ void piece_upd_move_x(struct piece *piece, struct board *board, struct frame_inf
 void piece_upd_move_y(struct piece *piece, struct board *board, struct frame_info frame);
 void piece_upd_drop(struct piece *piece, struct board *board, struct frame_info frame);
 void piece_upd_bump(struct piece *piece, struct board *board, struct frame_info frame);
+void piece_upd_rotate(struct piece *piece, struct board *board, struct frame_info frame);

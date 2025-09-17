@@ -5,6 +5,7 @@
 #include "base/v2.h"
 #include "block/block-type.h"
 #include "block/block.h"
+#include "engine/debug-draw/debug-draw.h"
 #include "globals/g-gfx.h"
 #include "piece/piece-defs.h"
 #include "scrns/scrn-game/scrn-game-data.h"
@@ -45,11 +46,12 @@ board_drw(struct board *board, enum game_theme theme)
 	{
 		enum prim_mode bg = GAME_BOARD_BG[theme];
 		g_color(bg);
-		g_rec_fill(
-			0,
-			-1 * board->block_size,
-			board->columns * board->block_size,
-			(board->rows + 1) * board->block_size);
+		i32 x = 0;
+		i32 y = -1 * board->block_size;
+		i32 w = (board->columns * board->block_size) + 1;
+		i32 h = (board->rows + 1) * board->block_size;
+		g_rec_fill(x, y, w, h);
+		debug_draw_rec(x, y, w, h);
 	}
 
 	g_color(PRIM_MODE_BLACK);
@@ -62,14 +64,19 @@ board_drw(struct board *board, enum game_theme theme)
 		for(size j = 0; j < (size)ARRLEN(PIECE_ROTATIONS); ++j) {
 			v2_i32 rotation     = PIECE_ROTATIONS[j];
 			v2_i32 other_coords = v2_add_i32(coords, rotation);
-			i32 other_id        = board_coords_to_idx(board, other_coords.x, other_coords.y);
+			if(other_coords.x > board->columns - 1) {
+				continue;
+			}
+			i32 other_id = board_coords_to_idx(board, other_coords.x, other_coords.y);
 			if(other_id > -1) {
 				struct block *other_block = board->blocks + other_id;
 				if(block->type == other_block->type) {
 					v2_i32 un_offset = {rotation.x * (block_size * 0.5f), -rotation.y * (block_size * 0.5f)};
 					v2_i32 cir_p     = v2_add_i32(p, (v2_i32){block_size * 0.5f, block_size * 0.5f});
 					cir_p            = v2_add_i32(cir_p, un_offset);
-					g_cir_fill(cir_p.x, cir_p.y, 10);
+					i32 r            = 10;
+					g_cir_fill(cir_p.x, cir_p.y, r);
+					debug_draw_cir_fill(cir_p.x, cir_p.y, r);
 				}
 			}
 		}

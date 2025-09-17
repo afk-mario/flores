@@ -357,21 +357,22 @@ piece_rotate(
 	i32 direction,
 	struct frame_info frame)
 {
-	i32 block_size   = board->block_size;
-	f32 timestamp    = frame.timestamp;
-	v2_i32 coords    = piece->p;
-	i32 rot_idx_dest = mod_euc_i32(piece->rot + direction, ARRLEN(PIECE_ROTATIONS));
-	v2_i32 rot       = PIECE_ROTATIONS[rot_idx_dest];
-	v2_i32 rot_dest  = {piece->p.x + rot.x, piece->p.y + rot.y};
-	b32 is_block_x   = board_block_has(board, rot_dest.x, coords.y);
-	b32 is_block_y   = board_block_has(board, coords.x, rot_dest.y);
-	b32 is_wall_x    = board_is_wall_x(board, rot_dest.x);
-	b32 is_wall_y    = board_is_wall_y(board, rot_dest.y);
-	i32 dx           = 0;
-	i32 dy           = 0;
+	i32 block_size    = board->block_size;
+	f32 timestamp     = frame.timestamp;
+	v2_i32 coords     = piece->p;
+	i32 rot_idx_dest  = mod_euc_i32(piece->rot + direction, ARRLEN(PIECE_ROTATIONS));
+	v2_i32 rot_start  = PIECE_ROTATIONS[piece->rot];
+	v2_i32 rot_dest   = PIECE_ROTATIONS[rot_idx_dest];
+	v2_i32 block_dest = {piece->p.x + rot_dest.x, piece->p.y + rot_dest.y};
+	b32 is_block_x    = board_block_has(board, block_dest.x, coords.y);
+	b32 is_block_y    = board_block_has(board, coords.x, block_dest.y);
+	b32 is_wall_x     = board_is_wall_x(board, block_dest.x);
+	b32 is_wall_y     = board_is_wall_y(board, block_dest.y);
+	i32 dx            = 0;
+	i32 dy            = 0;
 
 	if(is_wall_x || is_block_x) {
-		if(rot_dest.x < coords.x) {
+		if(block_dest.x < coords.x) {
 			dx = 1;
 		} else {
 			dx = -1;
@@ -380,14 +381,30 @@ piece_rotate(
 		dy = 1;
 	}
 
-	v2_i32 dest   = {piece->p.x + dx, piece->p.y + dy};
-	b32 col_wall  = piece_collides_wall(piece, board, dx, dy);
-	b32 col_block = piece_collides_block(piece, board, dx, dy);
+	v2_i32 dest     = {piece->p.x + dx, piece->p.y + dy};
+	b32 col_wall    = piece_collides_wall(piece, board, dx, dy);
+	b32 col_block   = piece_collides_block(piece, board, dx, dy);
+	v2 rot_start_v2 = {rot_start.x, rot_start.y};
+	v2 rot_end_v2   = {rot_dest.x, rot_dest.y};
 
 	if(!col_wall && !col_block) {
 		piece->p   = dest;
 		piece->rot = rot_idx_dest;
-		if(dx == 0 && dy == 0) {
+		if(dx != 0 && dy != 0) {
+		} else {
+			piece->upd = piece_upd_rotate;
 		}
+	}
+}
+
+void
+piece_upd_rotate(struct piece *piece, struct board *board, struct frame_info frame)
+{
+	i32 block_size = board->block_size;
+	f32 timestamp  = frame.timestamp;
+	f32 dur        = timestamp - piece->ani_timestamp;
+	f32 t          = clamp_f32(dur / piece->ani_duration, 0, 1.0f);
+	if(t == 1.0f) {
+		piece->upd = piece_upd_inp;
 	}
 }

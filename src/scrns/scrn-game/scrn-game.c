@@ -36,7 +36,7 @@ static void scrn_game_piece_spawn_rndm(struct scrn_game *scrn);
 static b32 scrn_game_piece_set_blocks(struct scrn_game *scrn);
 
 #define GAME_WALL_W 3
-#define GAME_HUD_W  SYS_DISPLAY_W - (GAME_WALL_W * 2) - (BLOCK_SIZE * (BOARD_COLUMNS * 2))
+#define GAME_HUD_W  SYS_DISPLAY_W - (GAME_WALL_W * 2) - (BLOCK_SIZE * (BOARD_COLUMNS * 2)) - 2
 // #define BOARD_FULL
 
 void
@@ -280,10 +280,9 @@ scrn_game_drw_hud(struct scrn_game *scrn)
 	g_color(PRIM_MODE_WHITE);
 	g_lin(inset.x + inset.w - 1, inset.y, inset.x + inset.w - 1, inset.y + inset.h); // right
 	g_lin(inset.x, inset.y, inset.x, inset.y + inset.h);                             // left
-	debug_draw_rec_i32(root);
+	// debug_draw_rec_i32(root);
 	rec_i32_cut_top(&root, 13);
-	debug_draw_rec_i32(root);
-	debug_draw_rec_i32(root);
+	// debug_draw_rec_i32(root);
 	g_color(PRIM_MODE_WHITE);
 	{
 		str8 str       = str8_lit("Next\nseed");
