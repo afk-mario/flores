@@ -55,6 +55,7 @@
 
 #include "block/block.c"
 #include "board/board.c"
+#include "falling/falling.c"
 #include "piece/piece.c"
 
 #include "scrns/scrn-game/scrn-game.c"

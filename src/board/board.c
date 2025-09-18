@@ -6,6 +6,7 @@
 #include "block/block-type.h"
 #include "block/block.h"
 #include "engine/debug-draw/debug-draw.h"
+#include "falling/falling.h"
 #include "globals/g-gfx.h"
 #include "piece/piece-defs.h"
 #include "scrns/scrn-game/scrn-game-data.h"
@@ -21,6 +22,7 @@ board_ini(struct board *board, f32 timestamp)
 	board->block_size_inv = 1.0f / (f32)BLOCK_SIZE;
 
 	mclr_array(board->blocks);
+	mclr_array(board->fallings);
 }
 
 void
@@ -33,6 +35,15 @@ board_upd(struct board *board, struct frame_info frame)
 		struct block *block = board->blocks + i;
 		if(block->type == BLOCK_TYPE_NONE) { continue; }
 		block_upd(block, board->block_size);
+	}
+	for(size i = 0; i < (size)ARRLEN(board->fallings); ++i) {
+		struct falling *falling = board->fallings + i;
+		if(falling->id == 0) { continue; }
+		if(falling_upd(falling, board, timestamp)) {
+			board_falling_remove(board, (struct falling_handle){.id = i});
+			struct block block = {.type = falling->type};
+			board_block_set(board, block, falling->p.x, falling->p.y);
+		}
 	}
 }
 
@@ -84,6 +95,12 @@ board_drw(struct board *board, enum game_theme theme)
 		if(block->type == BLOCK_TYPE_NONE) { continue; }
 		v2_i32 p = board_idx_to_px(board, i);
 		block_drw(block, theme, p.x, p.y, board->block_size);
+	}
+
+	for(size i = 0; i < (size)ARRLEN(board->fallings); ++i) {
+		struct falling *falling = board->fallings + i;
+		if(falling->id == 0) { continue; }
+		falling_drw(falling, board, theme);
 	}
 }
 
@@ -218,11 +235,11 @@ board_drw_dbg(struct board *board)
 }
 
 struct falling_handle
-board_falling_spawn(struct board *board, struct falling value, i32 x, i32 y)
+board_falling_spawn(struct board *board, struct falling value)
 {
 	struct falling_handle res = {0};
 	for(size i = 1; i < (size)ARRLEN(board->fallings); ++i) {
-		struct falling *item = board->fallings + res.id;
+		struct falling *item = board->fallings + i;
 		if(item->id == 0) {
 			res.id = i;
 		}

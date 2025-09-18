@@ -142,10 +142,16 @@ scrn_game_upd(struct app *app, f32 dt)
 			struct scrn_game_editor *editor = &scrn->editor;
 			v2_i32 px                       = scrn_game_mouse_to_board(scrn);
 			v2_i32 coords                   = board_px_to_coords(board, px.x, px.y);
+			b32 has_bottom                  = board_block_has(board, coords.x, coords.y - 1) || board_is_wall_y(board, coords.y - 1);
 
-			if(inp_pressed(INP_MOUSE_LEFT)) {
-				struct block block = {.type = editor->type};
-				board_block_set(&scrn->board, block, coords.x, coords.y);
+			if(inp_just_pressed(INP_MOUSE_LEFT)) {
+				if(has_bottom) {
+					struct block block = {.type = editor->type};
+					board_block_set(&scrn->board, block, coords.x, coords.y);
+				} else {
+					struct falling falling = {.type = editor->type, .p = coords};
+					board_falling_spawn(board, falling);
+				}
 			}
 			if(inp_pressed(INP_MOUSE_RIGHT)) {
 				board_block_clr(&scrn->board, coords.x, coords.y);
@@ -389,8 +395,7 @@ scrn_game_piece_spawn_rndm(struct scrn_game *scrn)
 	i32 max_type        = (t.w / block_size) - 1;
 	piece->types[0]     = rndm_range_i32(NULL, BLOCK_TYPE_NONE + 1, max_type);
 	piece->types[1]     = rndm_range_i32(NULL, BLOCK_TYPE_NONE + 1, max_type);
-	piece->types[1]     = piece->types[0];
-	piece->p.x          = rndm_range_i32(NULL, 0, c - 2);
+	piece->p.x          = (c / 2) - 1;
 	piece->p.y          = r;
 	piece_ini(piece, timestamp);
 	scrn->state = SCRN_GAME_STATE_PLAY;
@@ -405,16 +410,20 @@ scrn_game_piece_set_blocks(struct scrn_game *scrn)
 	v2_i32 coords       = piece->p;
 	v2_i32 rot          = PIECE_ROTATIONS[piece->rot];
 
-	if(coords.y >= board->rows) {
-		res = true;
-	} else {
-		for(size i = 0; i < (size)ARRLEN(piece->types); ++i) {
+	if(coords.y >= board->rows) { return true; }
+
+	for(size i = 0; i < (size)ARRLEN(piece->types); ++i) {
+		v2_i32 p = {
+			coords.x + (rot.x * i),
+			coords.y + (rot.y * i),
+		};
+		b32 has_bottom = board_block_has(board, p.x, p.y - 1) || board_is_wall_y(board, p.y - 1);
+		if(has_bottom) {
 			struct block block = {.type = piece->types[i]};
-			board_block_set(
-				board,
-				block,
-				coords.x + (rot.x * i),
-				coords.y + (rot.y * i));
+			board_block_set(board, block, p.x, p.y);
+		} else {
+			struct falling falling = {.type = piece->types[i], .p = p};
+			board_falling_spawn(board, falling);
 		}
 	}
 	return res;
