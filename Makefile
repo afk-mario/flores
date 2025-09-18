@@ -191,7 +191,7 @@ win_publish:
 		CDEFS="-DSYS_LOG_LEVEL=2 -DDEV=1"
 
 ifeq ($(DETECTED_OS), Darwin)
-publish_all: linux_publish www_publish pd_publish macos_publish
+publish_all: macos_publish www_publish pd_publish
 else
 publish_all: linux_publish www_publish pd_publish
 endif
