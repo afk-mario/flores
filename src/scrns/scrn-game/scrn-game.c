@@ -106,9 +106,6 @@ scrn_game_upd(struct app *app, f32 dt)
 		scrn->state = scrn->state == SCRN_GAME_STATE_PAUSE ? SCRN_GAME_STATE_PLAY : SCRN_GAME_STATE_PAUSE;
 	}
 	{
-		if(inp_key_just_pressed('0')) {
-			scrn->editor.type = BLOCK_TYPE_NONE;
-		}
 		if(inp_key_just_pressed('1')) {
 			scrn->editor.type = BLOCK_TYPE_NONE + 1;
 		}
@@ -126,6 +123,18 @@ scrn_game_upd(struct app *app, f32 dt)
 		}
 		if(inp_key_just_pressed('6')) {
 			scrn->editor.type = BLOCK_TYPE_NONE + 6;
+		}
+		if(inp_key_just_pressed('7')) {
+			scrn->editor.type = BLOCK_TYPE_NONE + 7;
+		}
+		if(inp_key_just_pressed('8')) {
+			scrn->editor.type = BLOCK_TYPE_NONE + 8;
+		}
+		if(inp_key_just_pressed('9')) {
+			scrn->editor.type = BLOCK_TYPE_NONE + 9;
+		}
+		if(inp_key_just_pressed('0')) {
+			scrn->editor.type = BLOCK_TYPE_NONE + 10;
 		}
 
 		{
@@ -380,6 +389,7 @@ scrn_game_piece_spawn_rndm(struct scrn_game *scrn)
 	i32 max_type        = (t.w / block_size) - 1;
 	piece->types[0]     = rndm_range_i32(NULL, BLOCK_TYPE_NONE + 1, max_type);
 	piece->types[1]     = rndm_range_i32(NULL, BLOCK_TYPE_NONE + 1, max_type);
+	piece->types[1]     = piece->types[0];
 	piece->p.x          = rndm_range_i32(NULL, 0, c - 2);
 	piece->p.y          = r;
 	piece_ini(piece, timestamp);

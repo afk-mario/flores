@@ -1,7 +1,9 @@
 #include "block.h"
+#include "base/v2.h"
 #include "block/block-defs.h"
 #include "block/block-type.h"
 #include "engine/assets/assets.h"
+#include "engine/debug-draw/debug-draw.h"
 #include "engine/gfx/gfx.h"
 #include "globals/g-gfx.h"
 #include "globals/g-tex-refs.h"
@@ -25,29 +27,17 @@ block_drw(
 	i32 y,
 	i16 block_size)
 {
-	i32 w     = block_size;
-	i32 h     = block_size;
-	i32 cx    = x + (w * 0.5f);
-	i32 cy    = y + (h * 0.5f);
-	rec_i32 r = {.x = x + 1, .y = y + 1, .w = w - 2, .h = h - 2};
+	v2 p   = {x, y};
+	i32 d  = 26;
+	i32 r  = (block_size - 2) * 0.5f;
+	i32 bg = GAME_BLOCK_BG[theme];
 
-	enum g_tex_id ref      = GAME_THEME_REFS[theme];
-	i32 id                 = g_tex_refs_id_get(ref);
-	struct tex t           = asset_tex(id);
-	struct tex_rec tex_rec = asset_tex_rec(id, 0, 0, t.h, t.h);
-	i32 fg                 = GAME_BLOCK_FG[theme];
-	i32 bg                 = GAME_BLOCK_BG[theme];
+	// if(bg > -1) {
+	// 	g_color(bg);
+	// 	g_cir_fill((p.x + 1) + r, (p.y + 1) + r, d);
+	// 	debug_draw_cir_fill((p.x + 1) + r, (p.y + 1) + r, d);
+	// }
 
-	if(fg > -1) {
-		g_color(fg);
-		g_cir_fill(cx, cy, r.w);
-	}
-	if(bg > -1) {
-		g_color(bg);
-		g_cir_fill(cx, cy, r.w - 3);
-	}
-
-	i32 d = w - 18;
 	g_color(PRIM_MODE_WHITE);
 	switch(block->type) {
 	case BLOCK_TYPE_A: {
@@ -60,7 +50,53 @@ block_drw(
 	} break;
 	}
 
+	enum g_tex_id ref      = GAME_THEME_REFS[theme];
+	i32 id                 = g_tex_refs_id_get(ref);
+	struct tex t           = asset_tex(id);
+	struct tex_rec tex_rec = asset_tex_rec(id, (block->type - 1) * t.h, 0, t.h, t.h);
 	g_spr_mode(SPR_MODE_COPY);
-	tex_rec = asset_tex_rec(id, (block->type - 1) * 28, 0, 28, t.h);
-	g_spr_piv(tex_rec, cx, cy, 0, (v2){0.5f, 0.5f});
+	g_spr(tex_rec, p.x, p.y, 0);
+}
+
+void
+block_link_drw(
+	enum game_theme theme,
+	i32 x,
+	i32 y,
+	i32 rx,
+	i32 ry,
+	i16 block_size)
+{
+	i32 r              = BLOCK_LINK_D / 2;
+	i32 d              = BLOCK_LINK_D;
+	i32 block_size_h   = block_size / 2;
+	i32 block_size_q   = block_size / 4;
+	i32 bg             = GAME_BLOCK_BG[theme];
+	v2_i32 link_offset = {
+		rx * block_size_h,
+		-ry * block_size_h,
+	};
+	link_offset = v2_add_i32(link_offset, (v2_i32){
+											  rx * -r,
+											  -ry * -r,
+										  });
+	g_color(bg);
+	{
+		i32 cx = (x + block_size_h) + link_offset.x;
+		i32 cy = (y + block_size_h) + link_offset.y;
+		{
+			g_cir_fill(cx, cy, d);
+			debug_draw_cir(cx, cy, d);
+		}
+	}
+	{
+		x      = x + block_size * rx;
+		y      = y + block_size * -ry;
+		i32 cx = (x + block_size_h) + -link_offset.x;
+		i32 cy = (y + block_size_h) + -link_offset.y;
+		{
+			g_cir_fill(cx, cy, d);
+			debug_draw_cir(cx, cy, d);
+		}
+	}
 }

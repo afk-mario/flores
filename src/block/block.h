@@ -5,3 +5,4 @@
 
 void block_upd(struct block *block, i16 block_size);
 void block_drw(struct block *block, enum game_theme theme, i32 x, i32 y, i16 block_size);
+void block_link_drw(enum game_theme theme, i32 x, i32 y, i32 rx, i32 ry, i16 block_size);

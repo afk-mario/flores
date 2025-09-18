@@ -71,12 +71,7 @@ board_drw(struct board *board, enum game_theme theme)
 			if(other_id > -1) {
 				struct block *other_block = board->blocks + other_id;
 				if(block->type == other_block->type) {
-					v2_i32 un_offset = {rotation.x * (block_size * 0.5f), -rotation.y * (block_size * 0.5f)};
-					v2_i32 cir_p     = v2_add_i32(p, (v2_i32){block_size * 0.5f, block_size * 0.5f});
-					cir_p            = v2_add_i32(cir_p, un_offset);
-					i32 r            = 10;
-					g_cir_fill(cir_p.x, cir_p.y, r);
-					debug_draw_cir_fill(cir_p.x, cir_p.y, r);
+					block_link_drw(theme, p.x, p.y, rotation.x, rotation.y, block_size);
 				}
 			}
 		}
@@ -101,8 +96,7 @@ board_block_set(struct board *board, struct block block, i32 x, i32 y)
 		log_warn("board", "tried setting at invalid: %d,%d[%d]=%d", x, y, idx, block.type);
 		return;
 	}
-	board->blocks[idx]    = block;
-	board->blocks[idx].id = idx;
+	board->blocks[idx] = block;
 }
 
 void
@@ -110,7 +104,6 @@ board_block_clr(struct board *board, i32 x, i32 y)
 {
 	i16 idx = board_coords_to_idx(board, x, y);
 	if(idx < 0 || idx > (size)ARRLEN(board->blocks)) { return; }
-	board->blocks[idx].id   = 0;
 	board->blocks[idx].type = BLOCK_TYPE_NONE;
 }
 
@@ -222,4 +215,29 @@ board_drw_dbg(struct board *board)
 		v2_i32 p = board_idx_to_coords(board, i);
 		g_px(p.x, p.y);
 	}
+}
+
+struct falling_handle
+board_falling_spawn(struct board *board, struct falling value, i32 x, i32 y)
+{
+	struct falling_handle res = {0};
+	for(size i = 1; i < (size)ARRLEN(board->fallings); ++i) {
+		struct falling *item = board->fallings + res.id;
+		if(item->id == 0) {
+			res.id = i;
+		}
+	}
+	if(res.id != 0) {
+		struct falling *item = board->fallings + res.id;
+		*item                = value;
+		item->id             = res.id;
+	}
+	return res;
+}
+
+void
+board_falling_remove(struct board *board, struct falling_handle handle)
+{
+	dbg_assert(handle.id > 0 && handle.id < (size)ARRLEN(board->fallings));
+	board->fallings[handle.id].id = 0;
 }
