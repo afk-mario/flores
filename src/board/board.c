@@ -257,4 +257,78 @@ board_falling_remove(struct board *board, struct falling_handle handle)
 {
 	dbg_assert(handle.id > 0 && handle.id < (size)ARRLEN(board->fallings));
 	board->fallings[handle.id].id = 0;
+	i32 r                         = 0;
+}
+
+i32
+board_flood_fill(struct board *board, i16 x, i16 y, i16 *group)
+{
+	static const i32 dir_x[4] = {-1, 1, 0, 0};
+	static const i32 dir_y[4] = {0, 0, -1, 1};
+
+	i32 res                           = 0;
+	u16 *visited                      = board->visited;
+	i32 r                             = board->rows;
+	i32 c                             = board->columns;
+	i32 q[BOARD_COLUMNS * BOARD_ROWS] = {0};
+	i32 qh                            = 0;
+	i32 qt                            = 0;
+	i32 start_idx                     = board_coords_to_idx(board, x, y);
+	enum block_type type              = board->blocks[start_idx].type;
+
+	q[qt++]            = start_idx;
+	visited[start_idx] = 1;
+
+	while(qh < qt) {
+		i32 idx       = q[qh++];
+		v2_i32 coords = board_idx_to_coords(board, idx);
+		group[res++]  = idx;
+		for(size k = 0; k < 4; ++k) {
+			i32 ny = coords.y + dir_y[k];
+			i32 nx = coords.x + dir_x[k];
+			if(ny < 0 || ny >= r || nx < 0 || nx >= c) continue;
+
+			i32 nidx = board_coords_to_idx(board, nx, ny);
+			if(!visited[nidx] && board->blocks[nidx].type == (i16)type) {
+				visited[nidx] = 1;
+				q[qt++]       = nidx;
+			}
+		}
+	}
+
+	return res;
+}
+
+i32
+board_matches_upd(struct board *board)
+{
+	mclr_array(board->visited);
+	mclr_array(board->matches);
+	i32 res      = 0;
+	i32 rows     = board->rows;
+	i32 cols     = board->columns;
+	i32 count    = rows * cols;
+	u16 *visited = board->visited;
+	u16 *matches = board->matches;
+	i16 group[BOARD_COLUMNS * BOARD_ROWS];
+
+	for(size y = 0; y < rows; ++y) {
+		for(size x = 0; x < cols; ++x) {
+			i32 idx              = board_coords_to_idx(board, x, y);
+			enum block_type type = board->blocks[idx].type;
+			if(type == BLOCK_TYPE_NONE || visited[idx]) {
+				continue;
+			}
+
+			i32 n = board_flood_fill(board, x, y, group);
+			if(n >= 4) {
+				for(size i = 0; i < n; ++i) {
+					matches[group[i]] = 1;
+					res++;
+				}
+			}
+		}
+	}
+
+	return res;
 }

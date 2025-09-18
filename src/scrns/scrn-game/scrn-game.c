@@ -172,6 +172,28 @@ scrn_game_upd(struct app *app, f32 dt)
 				scrn_game_piece_spawn_rndm(scrn);
 			}
 		}
+
+		board_matches_upd(board);
+		for(size i = 0; i < (size)ARRLEN(board->matches); ++i) {
+			if(board->matches[i] != 0) {
+				v2_i32 coords = board_idx_to_coords(board, i);
+				board_block_clr(board, coords.x, coords.y);
+			}
+		}
+		for(size i = 0; i < (size)ARRLEN(board->blocks); ++i) {
+			enum block_type type = board->blocks[i].type;
+			if(type != BLOCK_TYPE_NONE) {
+				v2_i32 coords = board_idx_to_coords(board, i);
+				if(coords.y == 0) { continue; }
+				i16 idx = board_coords_to_idx(board, coords.x, coords.y - 1);
+				if(board->blocks[idx].type == BLOCK_TYPE_NONE) {
+					struct falling falling = {.type = type, .p = coords};
+					board_falling_spawn(board, falling);
+					board_block_clr(board, coords.x, coords.y);
+				}
+			}
+		}
+
 	} break;
 	default: {
 	} break;
