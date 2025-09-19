@@ -10,6 +10,7 @@ enum g_tex_id {
 	G_TEX_NONE,
 
 	G_TEX_SEEDS,
+	G_TEX_SEEDS_BG,
 	G_TEX_SHAPES,
 	G_TEX_ACORN,
 	G_TEX_ABSTRACT_SEEDS,
@@ -18,6 +19,7 @@ enum g_tex_id {
 };
 
 static const str8 G_TEX_PATH_MAP[G_TEX_NUM_COUNT] = {
+	[G_TEX_SEEDS_BG]       = str8_lit_comp("assets/imgs/seeds-bg.tex"),
 	[G_TEX_SEEDS]          = str8_lit_comp("assets/imgs/seeds.tex"),
 	[G_TEX_SHAPES]         = str8_lit_comp("assets/imgs/shapes.tex"),
 	[G_TEX_ACORN]          = str8_lit_comp("assets/imgs/avellana.tex"),

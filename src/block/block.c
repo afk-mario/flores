@@ -32,11 +32,6 @@ block_drw(
 	i32 bg = GAME_BLOCK_BG[theme];
 	i32 fg = GAME_BLOCK_FG[theme];
 
-	if(bg > -1) {
-		g_color(bg);
-		g_cir_fill((p.x + 1) + r, (p.y + 1) + r, d);
-	}
-
 	g_color(PRIM_MODE_WHITE);
 	switch(block->type) {
 	case BLOCK_TYPE_A: {
@@ -49,17 +44,21 @@ block_drw(
 	} break;
 	}
 
-	enum g_tex_id ref      = GAME_THEME_REFS[theme];
-	i32 id                 = g_tex_refs_id_get(ref);
-	struct tex t           = asset_tex(id);
-	struct tex_rec tex_rec = asset_tex_rec(id, (block->type - 1) * t.h, 0, t.h, t.h);
-	g_spr_mode(SPR_MODE_COPY);
-	g_spr(tex_rec, p.x, p.y, 0);
-	if(block->state == 1) {
-		if(fg > -1) {
-			g_color(fg);
-			g_cir((p.x + 1) + r, (p.y + 1) + r, d - 2);
-		}
+	{
+		enum g_tex_id ref      = G_TEX_SEEDS_BG;
+		i32 id                 = g_tex_refs_id_get(ref);
+		struct tex t           = asset_tex(id);
+		struct tex_rec tex_rec = asset_tex_rec(id, block->state * t.h, 0, t.h, t.h);
+		g_spr_mode(SPR_MODE_COPY);
+		g_spr(tex_rec, p.x, p.y, 0);
+	}
+	{
+		enum g_tex_id ref      = GAME_THEME_REFS[theme];
+		i32 id                 = g_tex_refs_id_get(ref);
+		struct tex t           = asset_tex(id);
+		struct tex_rec tex_rec = asset_tex_rec(id, (block->type - 1) * t.h, 0, t.h, t.h);
+		g_spr_mode(SPR_MODE_COPY);
+		g_spr(tex_rec, p.x, p.y, 0);
 	}
 }
 

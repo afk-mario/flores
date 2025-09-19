@@ -41,6 +41,7 @@
 - Wait a few frames before spawning new piece.
 - Rotation lerp
 - Use SFX sequences instead of single sfx
+- When rotation and getting pushed upwards, if you rotate again and end up horiztonally, make the offset in Y a little down
 
 # BUGS
 
