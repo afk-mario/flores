@@ -31,12 +31,12 @@ block_drw(
 	i32 d  = 26;
 	i32 r  = (block_size - 2) * 0.5f;
 	i32 bg = GAME_BLOCK_BG[theme];
+	i32 fg = GAME_BLOCK_FG[theme];
 
-	// if(bg > -1) {
-	// 	g_color(bg);
-	// 	g_cir_fill((p.x + 1) + r, (p.y + 1) + r, d);
-	// 	debug_draw_cir_fill((p.x + 1) + r, (p.y + 1) + r, d);
-	// }
+	if(bg > -1) {
+		g_color(bg);
+		g_cir_fill((p.x + 1) + r, (p.y + 1) + r, d);
+	}
 
 	g_color(PRIM_MODE_WHITE);
 	switch(block->type) {
@@ -56,6 +56,12 @@ block_drw(
 	struct tex_rec tex_rec = asset_tex_rec(id, (block->type - 1) * t.h, 0, t.h, t.h);
 	g_spr_mode(SPR_MODE_COPY);
 	g_spr(tex_rec, p.x, p.y, 0);
+	if(block->state == 1) {
+		if(fg > -1) {
+			g_color(fg);
+			g_cir((p.x + 1) + r, (p.y + 1) + r, d - 2);
+		}
+	}
 }
 
 void

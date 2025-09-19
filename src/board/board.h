@@ -28,4 +28,8 @@ b32 board_is_wall_y(struct board *board, i32 y);
 
 struct falling_handle board_falling_spawn(struct board *board, struct falling value);
 void board_falling_remove(struct board *board, struct falling_handle handle);
+void board_fallings_upd(struct board *board, struct frame_info frame);
+
 i32 board_matches_upd(struct board *board);
+void board_matches_clr(struct board *board);
+void board_fallings_spawn(struct board *board);

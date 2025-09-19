@@ -10,6 +10,7 @@ struct falling_handle {
 
 struct falling {
 	i16 id;
+	f32 dy;
 	v2_i32 o;
 	v2_i32 p;
 	f32 timestamp;

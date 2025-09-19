@@ -8,7 +8,9 @@ enum scrn_game_state {
   SCRN_GAME_STATE_NONE = 0,
 
   SCRN_GAME_STATE_PLAY,
-  SCRN_GAME_STATE_COLLPASE,
+  SCRN_GAME_STATE_FALLING,
+  SCRN_GAME_STATE_COLLAPSE,
+  SCRN_GAME_STATE_EDITOR,
   SCRN_GAME_STATE_PAUSE,
   SCRN_GAME_STATE_OVER,
 
@@ -19,7 +21,9 @@ enum scrn_game_state {
 static const str8 SCRN_GAME_STATE_LABELS[SCRN_GAME_STATE_NUM_COUNT] = {
   [SCRN_GAME_STATE_NONE] = str8_lit_comp("NONE"),
   [SCRN_GAME_STATE_PLAY] = str8_lit_comp("PLAY"),
-  [SCRN_GAME_STATE_COLLPASE] = str8_lit_comp("COLLPASE"),
+  [SCRN_GAME_STATE_FALLING] = str8_lit_comp("FALLING"),
+  [SCRN_GAME_STATE_COLLAPSE] = str8_lit_comp("COLLAPSE"),
+  [SCRN_GAME_STATE_EDITOR] = str8_lit_comp("EDITOR"),
   [SCRN_GAME_STATE_PAUSE] = str8_lit_comp("PAUSE"),
   [SCRN_GAME_STATE_OVER] = str8_lit_comp("OVER"),
 };

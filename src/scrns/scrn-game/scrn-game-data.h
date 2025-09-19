@@ -4,6 +4,9 @@
 #include "scrns/scrn-game/scrn-game-theme.h"
 
 #define GAME_THEME GAME_THEME_ABSTRACT
+#if DEBUG
+// #define GAME_SHOW_COLS
+#endif
 
 static const enum prim_mode GAME_BOARD_BG[GAME_THEME_NUM_COUNT] = {
 	[GAME_THEME_SHAPES]   = PRIM_MODE_WHITE,
@@ -14,13 +17,13 @@ static const enum prim_mode GAME_BOARD_BG[GAME_THEME_NUM_COUNT] = {
 static const enum prim_mode GAME_BLOCK_BG[GAME_THEME_NUM_COUNT] = {
 	[GAME_THEME_SHAPES]   = PRIM_MODE_BLACK,
 	[GAME_THEME_SEEDS]    = PRIM_MODE_WHITE,
-	[GAME_THEME_ABSTRACT] = PRIM_MODE_BLACK,
+	[GAME_THEME_ABSTRACT] = -1,
 };
 
 static const enum prim_mode GAME_BLOCK_FG[GAME_THEME_NUM_COUNT] = {
-	[GAME_THEME_SHAPES]   = PRIM_MODE_BLACK,
+	[GAME_THEME_SHAPES]   = PRIM_MODE_WHITE,
 	[GAME_THEME_SEEDS]    = PRIM_MODE_BLACK,
-	[GAME_THEME_ABSTRACT] = PRIM_MODE_BLACK,
+	[GAME_THEME_ABSTRACT] = -1,
 };
 
 static enum g_tex_id GAME_THEME_REFS[GAME_THEME_NUM_COUNT] = {

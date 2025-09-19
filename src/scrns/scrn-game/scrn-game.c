@@ -3,6 +3,7 @@
 #include "app/app-data.h"
 #include "app/app.h"
 #include "base/marena.h"
+#include "base/mathfunc.h"
 #include "base/rec.h"
 #include "base/str.h"
 #include "base/types.h"
@@ -15,6 +16,7 @@
 #include "engine/gfx/gfx.h"
 #include "engine/input.h"
 #include "globals/g-dbg.h"
+#include "globals/g-sfx-refs.h"
 #include "globals/g-tex-refs.h"
 #include "lib/rndm.h"
 #include "piece/piece.h"
@@ -25,6 +27,7 @@
 #include "board/board-defs.h"
 #include "globals/g-gfx.h"
 #include "scrns/scrn-game/scrn-game-defs.h"
+#include "vfx/vfx.h"
 
 static inline v2_i32 scrn_game_mouse_to_board(struct scrn_game *scrn);
 static inline void scrn_game_drw_bg(struct scrn_game *scrn);
@@ -33,7 +36,15 @@ static inline void scrn_game_drw_hud(struct scrn_game *scrn);
 static inline void scrn_game_drw_game(struct scrn_game *scrn);
 static inline void scrn_game_drw_block(struct scrn_game *scrn, struct block *block);
 static void scrn_game_piece_spawn_rndm(struct scrn_game *scrn);
-static b32 scrn_game_piece_set_blocks(struct scrn_game *scrn);
+static void scrn_game_piece_set_blocks(struct scrn_game *scrn);
+static inline void scrn_game_matches_vfx(struct scrn_game *scrn);
+
+static inline void scrn_game_play_upd(struct scrn_game *scrn);
+static inline void scrn_game_falling_upd(struct scrn_game *scrn);
+static inline void scrn_game_pause_upd(struct scrn_game *scrn);
+static inline void scrn_game_editor_upd(struct scrn_game *scrn);
+static inline void scrn_game_collapse_upd(struct scrn_game *scrn);
+static inline void scrn_game_over_upd(struct scrn_game *scrn);
 
 #define GAME_WALL_W 3
 #define GAME_HUD_W  SYS_DISPLAY_W - (GAME_WALL_W * 2) - (BLOCK_SIZE * (BOARD_COLUMNS * 2)) - 2
@@ -55,6 +66,10 @@ scrn_game_ini(struct app *app)
 		void *frame_mem       = alloc.allocf(alloc.ctx, frame_mem_size);
 		marena_init(&scrn->frame.marena, frame_mem, frame_mem_size);
 		scrn->frame.alloc = marena_allocator(&scrn->frame.marena);
+	}
+
+	{
+		vfxs_init(&scrn->matches_vfx, BOARD_COLUMNS * BOARD_ROWS, alloc);
 	}
 
 	f32 timestamp       = scrn->frame.timestamp;
@@ -79,9 +94,7 @@ scrn_game_ini(struct app *app)
 	}
 #else
 	scrn_game_piece_spawn_rndm(scrn);
-	struct block block = {
-		.type = rndm_range_i32(NULL, BLOCK_TYPE_NONE + 1, BLOCK_TYPE_C),
-	};
+	scrn_game_state_set(scrn, SCRN_GAME_STATE_PLAY);
 #endif
 }
 
@@ -96,110 +109,40 @@ scrn_game_upd(struct app *app, f32 dt)
 	struct alloc scratch     = frame->alloc;
 	marena_reset(&frame->marena);
 
-	board_upd(&scrn->board, scrn->frame);
-
-	// if(scrn->board.state == BOARD_STATE_OVER) {
-	// 	app_set_scrn(app, SCRN_TYPE_OVER);
-	// }
-
-	if(inp_key_just_pressed('p')) {
-		scrn->state = scrn->state == SCRN_GAME_STATE_PAUSE ? SCRN_GAME_STATE_PLAY : SCRN_GAME_STATE_PAUSE;
-	}
-	{
-		if(inp_key_just_pressed('1')) {
-			scrn->editor.type = BLOCK_TYPE_NONE + 1;
-		}
-		if(inp_key_just_pressed('2')) {
-			scrn->editor.type = BLOCK_TYPE_NONE + 2;
-		}
-		if(inp_key_just_pressed('3')) {
-			scrn->editor.type = BLOCK_TYPE_NONE + 3;
-		}
-		if(inp_key_just_pressed('4')) {
-			scrn->editor.type = BLOCK_TYPE_NONE + 4;
-		}
-		if(inp_key_just_pressed('5')) {
-			scrn->editor.type = BLOCK_TYPE_NONE + 5;
-		}
-		if(inp_key_just_pressed('6')) {
-			scrn->editor.type = BLOCK_TYPE_NONE + 6;
-		}
-		if(inp_key_just_pressed('7')) {
-			scrn->editor.type = BLOCK_TYPE_NONE + 7;
-		}
-		if(inp_key_just_pressed('8')) {
-			scrn->editor.type = BLOCK_TYPE_NONE + 8;
-		}
-		if(inp_key_just_pressed('9')) {
-			scrn->editor.type = BLOCK_TYPE_NONE + 9;
-		}
-		if(inp_key_just_pressed('0')) {
-			scrn->editor.type = BLOCK_TYPE_NONE + 10;
-		}
-
-		{
-			struct board *board             = &scrn->board;
-			struct scrn_game_editor *editor = &scrn->editor;
-			v2_i32 px                       = scrn_game_mouse_to_board(scrn);
-			v2_i32 coords                   = board_px_to_coords(board, px.x, px.y);
-			b32 has_bottom                  = board_block_has(board, coords.x, coords.y - 1) || board_is_wall_y(board, coords.y - 1);
-
-			if(inp_just_pressed(INP_MOUSE_LEFT)) {
-				if(has_bottom) {
-					struct block block = {.type = editor->type};
-					board_block_set(&scrn->board, block, coords.x, coords.y);
-				} else {
-					struct falling falling = {.type = editor->type, .p = coords};
-					board_falling_spawn(board, falling);
-				}
-			}
-			if(inp_pressed(INP_MOUSE_RIGHT)) {
-				board_block_clr(&scrn->board, coords.x, coords.y);
-			}
-		}
-	}
-
 	struct piece *piece = &scrn->piece;
 	struct board *board = &scrn->board;
 
+	g_dbg_str(SCRN_GAME_STATE_LABELS[scrn->state]);
 	g_dbg_str(piece_to_str(piece, board, scratch));
+
 	switch(scrn->state) {
+	case SCRN_GAME_STATE_PAUSE: {
+		scrn_game_pause_upd(scrn);
+	} break;
+	case SCRN_GAME_STATE_EDITOR: {
+		scrn_game_editor_upd(scrn);
+	} break;
+	case SCRN_GAME_STATE_FALLING: {
+		scrn_game_falling_upd(scrn);
+	} break;
 	case SCRN_GAME_STATE_PLAY: {
-		if(piece_upd(piece, board, *frame)) {
-			if(scrn_game_piece_set_blocks(scrn)) {
-				app_set_scrn(app, SCRN_TYPE_OVER);
-			} else {
-				scrn_game_piece_spawn_rndm(scrn);
-			}
-		}
-
-		board_matches_upd(board);
-		for(size i = 0; i < (size)ARRLEN(board->matches); ++i) {
-			if(board->matches[i] != 0) {
-				v2_i32 coords = board_idx_to_coords(board, i);
-				board_block_clr(board, coords.x, coords.y);
-			}
-		}
-		for(size i = 0; i < (size)ARRLEN(board->blocks); ++i) {
-			enum block_type type = board->blocks[i].type;
-			if(type != BLOCK_TYPE_NONE) {
-				v2_i32 coords = board_idx_to_coords(board, i);
-				if(coords.y == 0) { continue; }
-				i16 idx = board_coords_to_idx(board, coords.x, coords.y - 1);
-				if(board->blocks[idx].type == BLOCK_TYPE_NONE) {
-					struct falling falling = {.type = type, .p = coords};
-					board_falling_spawn(board, falling);
-					board_block_clr(board, coords.x, coords.y);
-				}
-			}
-		}
-
+		scrn_game_play_upd(scrn);
+		board_fallings_upd(board, scrn->frame);
+	} break;
+	case SCRN_GAME_STATE_COLLAPSE: {
+		scrn_game_collapse_upd(scrn);
+	} break;
+	case SCRN_GAME_STATE_OVER: {
+		scrn_game_over_upd(scrn);
 	} break;
 	default: {
 	} break;
 	}
 
+	vfxs_upd(&scrn->matches_vfx, scrn->frame);
+
 	if(scrn->state == SCRN_GAME_STATE_OVER) {
+		app_set_scrn(app, SCRN_TYPE_OVER);
 	}
 }
 
@@ -209,6 +152,7 @@ scrn_game_drw(struct app *app)
 	enum g_txt_style style  = G_TXT_STYLE_DEBUG;
 	struct scrn_game *scrn  = &app->scrn_game;
 	struct frame_info frame = scrn->frame;
+	f32 timestamp           = frame.timestamp;
 	struct alloc scratch    = scrn->frame.alloc;
 	struct board *board     = &scrn->board;
 	v2_i32 board_offset     = {GAME_WALL_W, SYS_DISPLAY_H - GAME_WALL_W - (BLOCK_SIZE * board->rows)};
@@ -226,8 +170,44 @@ scrn_game_drw(struct app *app)
 	g_drw_offset(board_offset.x, board_offset.y);
 	debug_draw_set_offset(board_offset.x, board_offset.y);
 	scrn_game_drw_game(scrn);
+	vfxs_drw(&scrn->matches_vfx, scrn->frame);
 	debug_draw_set_offset(0, 0);
 	g_drw_offset(0, 0);
+
+	switch(scrn->state) {
+	case SCRN_GAME_STATE_PAUSE: {
+		f32 t     = clamp_f32((timestamp - scrn->t) / 0.2f, 0.0f, 1.0f);
+		f32 alpha = lerp(0, 0.8f, t);
+		g_pat(gfx_pattern_bayer_4x4(alpha * 16));
+		g_color(PRIM_MODE_BLACK);
+		g_rec_fill(0, 0, SYS_DISPLAY_W, SYS_DISPLAY_H);
+		alpha = lerp(0, 1.0f, t);
+		g_pat(gfx_pattern_bayer_4x4(alpha * 16));
+		enum g_txt_style style = G_TXT_STYLE_HUD;
+		str8 str               = str8_lit("PAUSE");
+		v2_i32 size            = g_txt_size(str, style);
+		i32 x                  = (GAME_WALL_W) + ((board->columns * board->block_size) / 2) - size.x * 0.5f;
+		i32 y                  = (SYS_DISPLAY_H * 0.5f) - (size.y * 0.5f);
+		rec_i32 rec            = rec_i32_expand((struct rec_i32){x - 1, y, size.x, size.y - 2}, 1);
+		g_color(PRIM_MODE_BLACK);
+		g_rec_fill(REC_UNPACK(rec));
+		g_spr_mode(SPR_MODE_WHITE);
+		g_txt(str, x, y, style);
+		g_pat(gfx_pattern_white());
+	} break;
+	case SCRN_GAME_STATE_EDITOR: {
+	} break;
+	case SCRN_GAME_STATE_FALLING: {
+	} break;
+	case SCRN_GAME_STATE_PLAY: {
+	} break;
+	case SCRN_GAME_STATE_COLLAPSE: {
+	} break;
+	case SCRN_GAME_STATE_OVER: {
+	} break;
+	default: {
+	} break;
+	}
 
 #if DEBUG
 	{
@@ -263,7 +243,7 @@ scrn_game_drw(struct app *app)
 			g_txt(str, layout.x + 1, layout.y + 1, style);
 		}
 	}
-	if(app->debug_drw) {
+	if(app->debug_drw || scrn->state == SCRN_GAME_STATE_EDITOR) {
 		debug_draw_do(0, 0);
 	}
 #endif
@@ -337,15 +317,9 @@ scrn_game_drw_hud(struct scrn_game *scrn)
 			i32 block_size     = scrn->board.block_size;
 			i32 x              = cntr.x - (block_size * 0.5f);
 			i32 y              = cntr.y - (block_size * 0.5f);
-			struct block block = {.type = BLOCK_TYPE_A};
+			struct block block = {.type = scrn->editor.type};
 			block_drw(&block, theme, x, y, block_size);
 		}
-		// {
-		// 	i32 id                 = g_tex_refs_id_get(G_TEX_ACORN);
-		// 	struct tex t           = asset_tex(id);
-		// 	struct tex_rec tex_rec = asset_tex_rec(id, 0, 0, t.w, t.h);
-		// 	g_spr_piv(tex_rec, cntr.x, cntr.y, 0, (v2){0.5f, 0.5f});
-		// }
 	}
 	rec_i32_cut_top(&root, margin);
 	{
@@ -419,20 +393,17 @@ scrn_game_piece_spawn_rndm(struct scrn_game *scrn)
 	piece->types[1]     = rndm_range_i32(NULL, BLOCK_TYPE_NONE + 1, max_type);
 	piece->p.x          = (c / 2) - 1;
 	piece->p.y          = r;
+	piece->o.y          = -14;
 	piece_ini(piece, timestamp);
-	scrn->state = SCRN_GAME_STATE_PLAY;
 }
 
-static b32
+static void
 scrn_game_piece_set_blocks(struct scrn_game *scrn)
 {
-	b32 res             = false;
 	struct board *board = &scrn->board;
 	struct piece *piece = &scrn->piece;
 	v2_i32 coords       = piece->p;
 	v2_i32 rot          = PIECE_ROTATIONS[piece->rot];
-
-	if(coords.y >= board->rows) { return true; }
 
 	for(size i = 0; i < (size)ARRLEN(piece->types); ++i) {
 		v2_i32 p = {
@@ -446,7 +417,209 @@ scrn_game_piece_set_blocks(struct scrn_game *scrn)
 		} else {
 			struct falling falling = {.type = piece->types[i], .p = p};
 			board_falling_spawn(board, falling);
+			g_sfx(G_SFX_SPAWN_01, 1);
 		}
 	}
-	return res;
+}
+
+void
+scrn_game_state_set(struct scrn_game *scrn, enum scrn_game_state value)
+{
+	switch(value) {
+	case SCRN_GAME_STATE_PLAY: {
+	} break;
+	case SCRN_GAME_STATE_COLLAPSE: {
+		scrn_game_matches_vfx(scrn);
+	} break;
+	default: {
+	} break;
+	}
+	scrn->t          = scrn->frame.timestamp;
+	scrn->prev_state = scrn->state;
+	scrn->state      = value;
+}
+
+void
+scrn_game_state_pop(struct scrn_game *scrn)
+{
+	scrn->state = scrn->prev_state;
+}
+
+static inline void
+scrn_game_play_upd(struct scrn_game *scrn)
+{
+	struct board *board     = &scrn->board;
+	struct piece *piece     = &scrn->piece;
+	struct frame_info frame = scrn->frame;
+	b32 piece_collided      = false;
+	b32 is_game_over        = false;
+
+	board_fallings_spawn(board);
+	board_upd(&scrn->board, frame);
+
+	piece_collided = piece_upd(piece, board, frame);
+	if(piece_collided) {
+		scrn_game_piece_set_blocks(scrn);
+		scrn_game_piece_spawn_rndm(scrn);
+	}
+
+	i32 matches_count = board_matches_upd(board);
+	// Update game over
+
+	if(inp_key_just_pressed('p')) {
+		scrn_game_state_set(scrn, SCRN_GAME_STATE_PAUSE);
+	}
+	if(inp_key_just_pressed('g')) {
+		scrn_game_state_set(scrn, SCRN_GAME_STATE_EDITOR);
+	}
+
+	if(matches_count > 0) {
+		scrn_game_state_set(scrn, SCRN_GAME_STATE_COLLAPSE);
+		switch(matches_count) {
+		case 2: {
+			g_sfx(G_SFX_MATCH_02, 1);
+		} break;
+		case 3: {
+			g_sfx(G_SFX_MATCH_03, 1);
+		} break;
+		case 4: {
+			g_sfx(G_SFX_MATCH_04, 1);
+		} break;
+		default: {
+			g_sfx(G_SFX_MATCH_01, 1);
+		} break;
+		}
+	}
+	for(size i = 0; i < (size)ARRLEN(board->blocks); ++i) {
+		if(board->blocks[i].type != BLOCK_TYPE_NONE) {
+			struct v2_i32 coords = board_idx_to_coords(board, i);
+			if(coords.y >= board->rows) {
+				scrn_game_state_set(scrn, SCRN_GAME_STATE_OVER);
+			}
+		}
+	}
+}
+
+static inline void
+scrn_game_pause_upd(struct scrn_game *scrn)
+{
+	if(inp_key_just_pressed('p')) {
+		scrn_game_state_pop(scrn);
+	}
+}
+
+static inline void
+scrn_game_editor_upd(struct scrn_game *scrn)
+{
+	f32 timestamp                   = scrn->frame.timestamp;
+	struct scrn_game_editor *editor = &scrn->editor;
+	struct board *board             = &scrn->board;
+
+	if(inp_key_just_pressed('g')) {
+		scrn_game_state_pop(scrn);
+	}
+	if(inp_key_just_pressed('1')) {
+		scrn->editor.type = BLOCK_TYPE_NONE + 1;
+	}
+	if(inp_key_just_pressed('2')) {
+		scrn->editor.type = BLOCK_TYPE_NONE + 2;
+	}
+	if(inp_key_just_pressed('3')) {
+		scrn->editor.type = BLOCK_TYPE_NONE + 3;
+	}
+	if(inp_key_just_pressed('4')) {
+		scrn->editor.type = BLOCK_TYPE_NONE + 4;
+	}
+	if(inp_key_just_pressed('5')) {
+		scrn->editor.type = BLOCK_TYPE_NONE + 5;
+	}
+	if(inp_key_just_pressed('6')) {
+		scrn->editor.type = BLOCK_TYPE_NONE + 6;
+	}
+	if(inp_key_just_pressed('7')) {
+		scrn->editor.type = BLOCK_TYPE_NONE + 7;
+	}
+	if(inp_key_just_pressed('8')) {
+		scrn->editor.type = BLOCK_TYPE_NONE + 8;
+	}
+	if(inp_key_just_pressed('9')) {
+		scrn->editor.type = BLOCK_TYPE_NONE + 9;
+	}
+	if(inp_key_just_pressed('0')) {
+		scrn->editor.type = BLOCK_TYPE_NONE + 10;
+	}
+
+	v2_i32 px     = scrn_game_mouse_to_board(scrn);
+	v2_i32 coords = board_px_to_coords(board, px.x, px.y);
+
+	if(inp_pressed(INP_MOUSE_LEFT) && editor->timestamp[coords.x] < timestamp) {
+		struct block block = {.type = editor->type};
+		board_block_set(&scrn->board, block, coords.x, coords.y);
+		editor->timestamp[coords.x] = timestamp + 0.3f;
+	}
+	if(inp_pressed(INP_MOUSE_RIGHT)) {
+		board_block_clr(&scrn->board, coords.x, coords.y);
+	}
+}
+
+static inline void
+scrn_game_falling_upd(struct scrn_game *scrn)
+{
+	struct board *board = &scrn->board;
+	f32 timestamp       = scrn->frame.timestamp;
+	board_fallings_upd(board, scrn->frame);
+	if(board->falling_count == 0) {
+		i32 count = board_matches_upd(board);
+		if(count > 0) {
+			// Chain ++
+			scrn_game_state_set(scrn, SCRN_GAME_STATE_COLLAPSE);
+		} else {
+			scrn_game_state_set(scrn, SCRN_GAME_STATE_PLAY);
+		}
+	}
+}
+
+static inline void
+scrn_game_collapse_upd(struct scrn_game *scrn)
+{
+	struct board *board     = &scrn->board;
+	struct frame_info frame = scrn->frame;
+	f32 timestamp           = frame.timestamp;
+	struct alloc scratch    = frame.alloc;
+
+	str8 str = str8_fmt_push(scratch, "vfx:%d", scrn->matches_vfx.count);
+	g_dbg_str(str);
+
+	if(scrn->matches_vfx.count == 0) {
+		board_matches_clr(&scrn->board);
+		board_fallings_spawn(board);
+		scrn_game_state_set(scrn, SCRN_GAME_STATE_FALLING);
+	}
+}
+
+static inline void
+scrn_game_over_upd(struct scrn_game *scrn)
+{
+}
+
+static inline void
+scrn_game_matches_vfx(struct scrn_game *scrn)
+{
+	struct board *board = &scrn->board;
+	f32 timestamp       = scrn->frame.timestamp;
+
+	for(size i = 0; i < (size)ARRLEN(board->matches); ++i) {
+		if(board->matches[i]) {
+			v2_i32 p       = board_idx_to_px(board, i);
+			struct vfx vfx = {
+				.timestamp = timestamp,
+				.duration  = 0.4f,
+				.x         = p.x,
+				.y         = p.y,
+				.w         = board->block_size,
+				.h         = board->block_size,
+			};
+			vfxs_create(&scrn->matches_vfx, vfx);
+		}
+	}
 }

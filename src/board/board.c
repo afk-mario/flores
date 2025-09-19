@@ -8,6 +8,7 @@
 #include "engine/debug-draw/debug-draw.h"
 #include "falling/falling.h"
 #include "globals/g-gfx.h"
+#include "globals/g-sfx-refs.h"
 #include "piece/piece-defs.h"
 #include "scrns/scrn-game/scrn-game-data.h"
 
@@ -36,6 +37,12 @@ board_upd(struct board *board, struct frame_info frame)
 		if(block->type == BLOCK_TYPE_NONE) { continue; }
 		block_upd(block, board->block_size);
 	}
+}
+
+void
+board_fallings_upd(struct board *board, struct frame_info frame)
+{
+	f32 timestamp = frame.timestamp;
 	for(size i = 0; i < (size)ARRLEN(board->fallings); ++i) {
 		struct falling *falling = board->fallings + i;
 		if(falling->id == 0) { continue; }
@@ -108,7 +115,6 @@ void
 board_block_set(struct board *board, struct block block, i32 x, i32 y)
 {
 	i16 idx = board_coords_to_idx(board, x, y);
-	log_info("board", "set: %d,%d[%d]=%d", x, y, idx, block.type);
 	if(idx < 0 || idx > (size)ARRLEN(board->blocks)) {
 		log_warn("board", "tried setting at invalid: %d,%d[%d]=%d", x, y, idx, block.type);
 		return;
@@ -245,6 +251,7 @@ board_falling_spawn(struct board *board, struct falling value)
 		}
 	}
 	if(res.id != 0) {
+		board->falling_count++;
 		struct falling *item = board->fallings + res.id;
 		*item                = value;
 		item->id             = res.id;
@@ -256,8 +263,10 @@ void
 board_falling_remove(struct board *board, struct falling_handle handle)
 {
 	dbg_assert(handle.id > 0 && handle.id < (size)ARRLEN(board->fallings));
+	if(board->fallings[handle.id].id != 0) {
+		board->falling_count--;
+	}
 	board->fallings[handle.id].id = 0;
-	i32 r                         = 0;
 }
 
 i32
@@ -267,7 +276,7 @@ board_flood_fill(struct board *board, i16 x, i16 y, i16 *group)
 	static const i32 dir_y[4] = {0, 0, -1, 1};
 
 	i32 res                           = 0;
-	u16 *visited                      = board->visited;
+	u8 *visited                       = board->visited;
 	i32 r                             = board->rows;
 	i32 c                             = board->columns;
 	i32 q[BOARD_COLUMNS * BOARD_ROWS] = {0};
@@ -304,12 +313,12 @@ board_matches_upd(struct board *board)
 {
 	mclr_array(board->visited);
 	mclr_array(board->matches);
-	i32 res      = 0;
-	i32 rows     = board->rows;
-	i32 cols     = board->columns;
-	i32 count    = rows * cols;
-	u16 *visited = board->visited;
-	u16 *matches = board->matches;
+	i32 res     = 0;
+	i32 rows    = board->rows;
+	i32 cols    = board->columns;
+	i32 count   = rows * cols;
+	u8 *visited = board->visited;
+	u8 *matches = board->matches;
 	i16 group[BOARD_COLUMNS * BOARD_ROWS];
 
 	for(size y = 0; y < rows; ++y) {
@@ -331,4 +340,34 @@ board_matches_upd(struct board *board)
 	}
 
 	return res;
+}
+
+void
+board_matches_clr(struct board *board)
+{
+	for(size i = 0; i < (size)ARRLEN(board->matches); ++i) {
+		if(board->matches[i] != 0) {
+			v2_i32 coords = board_idx_to_coords(board, i);
+			board_block_clr(board, coords.x, coords.y);
+		}
+	}
+}
+
+void
+board_fallings_spawn(struct board *board)
+{
+	for(size i = 0; i < (size)ARRLEN(board->blocks); ++i) {
+		enum block_type type = board->blocks[i].type;
+		if(type != BLOCK_TYPE_NONE) {
+			v2_i32 coords = board_idx_to_coords(board, i);
+			if(coords.y == 0) { continue; }
+			i16 idx = board_coords_to_idx(board, coords.x, coords.y - 1);
+			if(board->blocks[idx].type == BLOCK_TYPE_NONE) {
+				struct falling falling = {.type = type, .p = coords};
+				board_falling_spawn(board, falling);
+				board_block_clr(board, coords.x, coords.y);
+				g_sfx(G_SFX_SPAWN_01, 1);
+			}
+		}
+	}
 }

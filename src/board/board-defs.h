@@ -13,8 +13,9 @@ struct board {
 	i16 rows;
 	i16 block_size;
 	f32 block_size_inv;
+	i32 falling_count;
 	struct block blocks[(BOARD_COLUMNS * (BOARD_ROWS + 1)) + 1];
 	struct falling fallings[(BOARD_COLUMNS * (BOARD_ROWS + 1)) + 1];
-	u16 matches[BOARD_COLUMNS * BOARD_ROWS];
-	u16 visited[BOARD_COLUMNS * BOARD_ROWS];
+	u8 matches[BOARD_COLUMNS * BOARD_ROWS];
+	u8 visited[BOARD_COLUMNS * BOARD_ROWS];
 };

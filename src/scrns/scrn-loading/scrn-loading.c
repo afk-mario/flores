@@ -100,6 +100,7 @@ scrn_loading_end(struct loading_state *state, f32 time_start, f32 time_max, void
 	g_ui_init();
 	g_tex_refs_ini();
 	g_fnt_refs_ini();
+	g_sfx_refs_ini();
 	g_mus_refs_ini();
 	g_drw_ctx(ctx);
 

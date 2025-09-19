@@ -4,7 +4,9 @@
   "columns": ["id", "label"],
   "elements": [
     "PLAY",
-    "COLLPASE",
+    "FALLING",
+    "COLLAPSE",
+    "EDITOR",
     "PAUSE",
     "OVER",
   ]

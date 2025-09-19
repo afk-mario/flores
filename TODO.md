@@ -15,6 +15,11 @@
 - Remove blocks and check falling blocks
 - Combos and score
 
+- Play -> drop piece | Falling blocks
+- Check matches
+- Spawn VFX
+- Remove matches
+
 # 19
 
 - Procedural plants

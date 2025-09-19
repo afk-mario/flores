@@ -57,6 +57,7 @@
 #include "board/board.c"
 #include "falling/falling.c"
 #include "piece/piece.c"
+#include "vfx/vfx.c"
 
 #include "scrns/scrn-game/scrn-game.c"
 #include "scrns/scrn-loading/scrn-loading.c"

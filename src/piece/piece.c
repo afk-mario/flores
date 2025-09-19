@@ -7,6 +7,7 @@
 #include "engine/debug-draw/debug-draw.h"
 #include "engine/input.h"
 #include "globals/g-gfx.h"
+#include "globals/g-sfx-refs.h"
 #include "piece/piece-data.h"
 
 static inline i32 piece_handle_ody(struct piece *piece, struct board *board, i32 ody, f32 timestamp);
@@ -56,10 +57,10 @@ piece_drw(struct piece *piece, struct board *board, enum game_theme theme)
 	v2_i32 px        = board_coords_to_px(board, piece->p.x, piece->p.y);
 	v2_i32 px_o      = v2_add_i32(px, piece->o);
 	struct block a   = {.type = piece->types[0], .state = 1};
-	struct block b   = {.type = piece->types[1], .state = 1};
+	struct block b   = {.type = piece->types[1], .state = 0};
 	v2_i32 b_offset  = {rotation.x * block_size, -rotation.y * block_size};
 
-#if DEBUG
+#if defined(GAME_SHOW_COLS)
 	g_pat(gfx_pattern_50());
 	block_drw(&a, theme, px.x, px.y, block_size);
 	block_drw(&b, theme, px.x + b_offset.x, px.y + b_offset.y, block_size);
@@ -154,6 +155,7 @@ piece_move_x(
 		piece->ani_duration  = PIECE_ANI_MOVE_DUR;
 		piece->upd           = piece_upd_move_x;
 		piece->timestamp     = timestamp + PIECE_WAIT;
+		g_sfx(G_SFX_MOVE_01, 1);
 	}
 	return res;
 }
@@ -243,7 +245,8 @@ piece_upd_drop(struct piece *piece, struct board *board, struct frame_info frame
 	if(piece_collides(piece, board, 0, dy)) {
 		piece->o.y       = 0;
 		piece->upd       = piece_upd_inp;
-		piece->timestamp = timestamp + PIECE_WAIT;
+		piece->timestamp = timestamp + PIECE_WAIT_INP;
+		g_sfx(G_SFX_COLLIDE_04, 1);
 	}
 }
 
@@ -291,8 +294,14 @@ piece_do_btn(struct piece *piece, struct board *board, struct frame_info frame)
 	piece->btn_buffer = 0;
 
 	if(btn == INP_DPAD_U) {
-		piece->fast_drop = true;
-		piece->upd       = piece_upd_drop;
+		if(collides) {
+			piece->timestamp = 0;
+			piece->o.y       = 0;
+		} else {
+			piece->fast_drop = true;
+			piece->upd       = piece_upd_drop;
+			g_sfx(G_SFX_DROP_02, 1);
+		}
 	} else if(btn == INP_A) {
 		piece_rotate(piece, board, 1, frame);
 	} else if(btn == INP_B) {
@@ -303,8 +312,12 @@ piece_do_btn(struct piece *piece, struct board *board, struct frame_info frame)
 		dx = 1;
 	} else if(btn == INP_DPAD_D || inp_pressed(INP_DPAD_D)) {
 		if(collides) {
-			piece->o.y = 0;
+			piece->o.y       = 0;
+			piece->timestamp = 0;
 		} else {
+			if(btn == INP_DPAD_D) {
+				g_sfx(G_SFX_MOVE_01, 1);
+			}
 			piece_handle_ody(piece, board, PIECE_GRAVITY, timestamp);
 		}
 	}
@@ -317,6 +330,7 @@ piece_do_btn(struct piece *piece, struct board *board, struct frame_info frame)
 static inline void
 piece_bump(struct piece *piece, i32 direction, f32 timestamp)
 {
+	g_sfx(G_SFX_COLLIDE_01, 1);
 	piece->so.x          = direction * PIECE_BUMP;
 	piece->o.x           = piece->so.x;
 	piece->ani_timestamp = timestamp;
@@ -390,6 +404,11 @@ piece_rotate(
 		if(dx != 0 && dy != 0) {
 		} else {
 			piece->upd = piece_upd_rotate;
+			if(direction == 1) {
+				g_sfx(G_SFX_CLICK_01, 1);
+			} else {
+				g_sfx(G_SFX_CLICK_02, 1);
+			}
 		}
 	}
 }

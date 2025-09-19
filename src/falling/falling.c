@@ -19,7 +19,8 @@ falling_upd(struct falling *falling, struct board *board, f32 timestamp)
 
 	if(col) { return true; }
 
-	falling->o.y       = falling->o.y + ody;
+	falling->dy        = min_f32(falling->dy + 0.4f, 5.0f);
+	falling->o.y       = falling->o.y + (FALLING_SPD * falling->dy);
 	falling->timestamp = timestamp + PIECE_WAIT;
 
 	if(falling->o.y < block_size) { return res; }
@@ -42,9 +43,9 @@ falling_drw(struct falling *falling, struct board *board, enum game_theme theme)
 	f32 block_size_h = block_size / 2;
 	v2_i32 px        = board_coords_to_px(board, falling->p.x, falling->p.y);
 	v2_i32 px_o      = v2_add_i32(px, falling->o);
-	struct block a   = {.type = falling->type, .state = 1};
+	struct block a   = {.type = falling->type};
 
-#if DEBUG
+#if defined(GAME_SHOW_COLS)
 	g_pat(gfx_pattern_50());
 	block_drw(&a, theme, px.x, px.y, block_size);
 #endif
