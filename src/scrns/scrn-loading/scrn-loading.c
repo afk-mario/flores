@@ -153,7 +153,7 @@ scrn_loading_end(struct loading_state *state, f32 time_start, f32 time_max, void
 		}
 	}
 
-	g_mus_play(G_MUS_MAIN, false, true);
+	g_mus_play(G_MUS_MAIN, true, true);
 
 #if DEBUG
 	app_set_scrn(app, SCRN_TYPE_GAME);
@@ -325,4 +325,11 @@ scrn_loading_load_assets(struct loading_state *state, f32 time_start, f32 time_m
 
 error:
 	return false;
+}
+
+b32
+scrn_loading_load_music_paths(struct loading_state *state, f32 time_start, f32 time_max, void *args)
+{
+	i32 res = push_paths_from(state, G_MUS_REFS_PATH_MAP, ARRLEN(G_MUS_REFS_PATH_MAP), time_start, time_max);
+	return res;
 }

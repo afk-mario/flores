@@ -14,3 +14,5 @@ b32
 scrn_loading_load_assets(struct loading_state *state, f32 time_start, f32 time_max, void *args);
 
 b32 scrn_loading_load(struct loading_state *state, f32 time_start, f32 time_max, void *args);
+
+b32 scrn_loading_load_music_paths(struct loading_state *state, f32 time_start, f32 time_max, void *args);

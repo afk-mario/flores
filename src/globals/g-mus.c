@@ -14,16 +14,17 @@ static enum g_mus_id MUSIC_ID;
 static void g_mus_fade(struct mus_fade *fade, f32 timestamp);
 
 enum mus_channel_id
-g_mus_play(enum g_mus_id id, b32 fade_in, b32 loop)
+g_mus_play(enum g_mus_id ref, b32 fade_in, b32 loop)
 {
 	// if(!g_settings_mus_get()) { return 0; }
-	if(id == MUSIC_ID) { return MUSIC_CHANNEL; }
+	if(ref == MUSIC_ID) { return MUSIC_CHANNEL; }
 
 	MUSIC_CHANNEL = MUSIC_CHANNEL == 1 ? 2 : 1;
-	MUSIC_ID      = id;
+	MUSIC_ID      = ref;
 
-	f32 vol = fade_in ? 0 : G_MUS_VOL;
-	mus_play(g_mus_refs_handle_get(id), MUSIC_CHANNEL, vol, loop);
+	f32 vol                    = fade_in ? 0 : G_MUS_VOL;
+	struct asset_handle handle = g_mus_refs_handle_get(ref);
+	mus_play(handle, MUSIC_CHANNEL, vol, loop);
 	if(fade_in) {
 		G_MUS_FADE[MUSIC_CHANNEL] = (struct mus_fade){
 			.channel_id      = MUSIC_CHANNEL,
