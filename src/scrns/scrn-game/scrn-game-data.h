@@ -3,7 +3,10 @@
 #include "globals/g-tex-refs.h"
 #include "scrns/scrn-game/scrn-game-theme.h"
 
-#define GAME_THEME GAME_THEME_ABSTRACT
+#define GAME_THEME         GAME_THEME_ABSTRACT
+#define SCORE_VFX_LIFETIME 0.5f
+#define SCORE_VFX_Y_OFFSET -16
+
 #if DEBUG
 // #define GAME_SHOW_COLS
 #endif

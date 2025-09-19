@@ -1,5 +1,6 @@
 #include "board.h"
 #include "base/log.h"
+#include "base/mem.h"
 #include "base/rec.h"
 #include "base/types.h"
 #include "base/v2.h"
@@ -308,18 +309,20 @@ board_flood_fill(struct board *board, i16 x, i16 y, i16 *group)
 	return res;
 }
 
-i32
-board_matches_upd(struct board *board)
+struct board_matches_res
+board_matches_upd(struct board *board, struct alloc alloc)
 {
 	mclr_array(board->visited);
 	mclr_array(board->matches);
-	i32 res     = 0;
-	i32 rows    = board->rows;
-	i32 cols    = board->columns;
-	i32 count   = rows * cols;
-	u8 *visited = board->visited;
-	u8 *matches = board->matches;
+	struct board_matches_res res = {0};
+	i32 rows                     = board->rows;
+	i32 cols                     = board->columns;
+	i32 count                    = rows * cols;
+	u8 *visited                  = board->visited;
+	u8 *matches                  = board->matches;
 	i16 group[BOARD_COLUMNS * BOARD_ROWS];
+	i32 max_groups   = 10;
+	res.groups.items = alloc_arr(alloc, struct board_matches_group, max_groups);
 
 	for(size y = 0; y < rows; ++y) {
 		for(size x = 0; x < cols; ++x) {
@@ -331,9 +334,16 @@ board_matches_upd(struct board *board)
 
 			i32 n = board_flood_fill(board, x, y, group);
 			if(n >= 4) {
+				dbg_assert(res.groups.len < max_groups);
+				res.groups.items[res.groups.len++] =
+					(struct board_matches_group){
+						.len   = n,
+						.items = alloc_arr(alloc, i16, n),
+					};
 				for(size i = 0; i < n; ++i) {
-					matches[group[i]] = 1;
-					res++;
+					matches[group[i]]                             = 1;
+					res.groups.items[res.groups.len - 1].items[i] = group[i];
+					res.total++;
 				}
 			}
 		}

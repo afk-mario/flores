@@ -8,6 +8,21 @@
 #define BOARD_COLUMNS 6
 #define BOARD_ROWS    8
 
+struct board_matches_group {
+	size len;
+	i16 *items;
+};
+
+struct board_matches_group_arr {
+	size len;
+	struct board_matches_group *items;
+};
+
+struct board_matches_res {
+	i32 total;
+	struct board_matches_group_arr groups;
+};
+
 struct board {
 	i16 columns;
 	i16 rows;

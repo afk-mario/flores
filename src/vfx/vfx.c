@@ -10,6 +10,7 @@ vfxs_init(struct vfxs *pool, size count, struct alloc alloc)
 {
 	dbg_assert(count < U8_MAX);
 	dbg_assert(count > 0);
+	pool->count       = 0;
 	pool->items       = arr_new(pool->items, count, alloc);
 	pool->free_list   = arr_new(pool->free_list, count, alloc);
 	pool->generations = arr_new(pool->generations, count, alloc);
@@ -34,6 +35,12 @@ vfxs_upd(struct vfxs *pool, struct frame_info frame)
 	for(size i = (size)arr_len(pool->items) - 1; i >= 0; --i) {
 		struct vfx *item = pool->items + i;
 		if(item->id != 0) {
+			if(item->p_target.x != 0 && item->p_target.y != 0) {
+				item->p.x = item->p.x + (item->p_target.x - item->p.x) / 10;
+				item->p.y = item->p.y + (item->p_target.y - item->p.y) / 10;
+				// f.y+=(f.ty-f.y)/10
+			}
+
 			if(item->timestamp + item->duration <= timestamp) {
 				vfxs_remove(pool, (struct vfx_handle){item->id});
 			}
@@ -49,26 +56,7 @@ vfxs_drw(struct vfxs *pool, struct frame_info frame)
 	for(size i = 0; i < (size)arr_len(pool->items); ++i) {
 		struct vfx *item = pool->items + i;
 		if(item->id != 0) {
-			i32 x      = item->x;
-			i32 y      = item->y;
-			i32 w      = item->w;
-			i32 h      = item->h;
-			f32 cur    = timestamp - item->timestamp;
-			f32 t      = cur / item->duration;
-			i32 cx     = x + (item->w * 0.5f);
-			i32 cy     = y + (item->h * 0.5f);
-			f32 period = t > 0.5f ? 0.25f : 0.5f;
-			f32 flash  = sin_f32(cur * (PI2_FLOAT / period));
-			if(flash < 0.5f) {
-				if(t > 0.5f) {
-					g_color(PRIM_MODE_WHITE);
-				} else {
-					g_color(PRIM_MODE_BLACK);
-				}
-				g_color(PRIM_MODE_WHITE);
-				g_cir_fill(cx, cy, w);
-			}
-			debug_draw_cir_fill(x + (w * 0.5f), y + (h * 0.5f), 3);
+			vfx_drw(item, timestamp);
 		}
 	}
 	g_spr_mode(SPR_MODE_COPY);
@@ -119,4 +107,73 @@ vfxs_remove_all(struct vfxs *pool, struct vfx_handle handle)
 		struct vfx *item = pool->items + i;
 		vfxs_remove(pool, (struct vfx_handle){.id = item->id});
 	}
+}
+
+void
+vfx_drw(struct vfx *vfx, f32 timestamp)
+{
+	if(vfx->id == 0) { return; }
+	if(vfx->timestamp > timestamp) { return; }
+	f32 cur    = timestamp - vfx->timestamp;
+	f32 t      = cur / vfx->duration;
+	f32 period = t > 0.5f ? vfx->blink.period_min : vfx->blink.period_max;
+	f32 blink  = sin_f32(cur * (PI2_FLOAT / period));
+	if(vfx->blink.type == VFX_BLINK_TRANSPARENT) {
+		if(blink < 0.5f) { return; }
+	}
+
+	switch(vfx->type) {
+	case VFX_TYPE_TXT: {
+		g_txt_pivot(
+			vfx->txt.str,
+			vfx->p.x,
+			vfx->p.y,
+			vfx->txt.pivot,
+			vfx->txt.style);
+		debug_draw_cir(vfx->p.x, vfx->p.y, 3);
+
+	} break;
+	case VFX_TYPE_SPR: {
+	} break;
+	case VFX_TYPE_SHAPE: {
+		enum prim_mode color = vfx->shape.color;
+		if(vfx->blink.type == VFX_BLINK_COLOR) {
+			if(blink > 0.5f) {
+				color = color == PRIM_MODE_BLACK ? PRIM_MODE_WHITE : PRIM_MODE_BLACK;
+			}
+		}
+		enum prim_mode old = g_color(color);
+		switch(vfx->shape.type) {
+		case VFX_SHAPE_TYPE_CIR: {
+			g_cir(vfx->p.x, vfx->p.y, vfx->shape.d);
+		} break;
+		case VFX_SHAPE_TYPE_CIR_FILL: {
+			g_cir_fill(vfx->p.x, vfx->p.y, vfx->shape.d);
+		} break;
+		case VFX_SHAPE_TYPE_REC: {
+			g_rec(
+				vfx->p.x + vfx->shape.rec.x,
+				vfx->p.y + vfx->shape.rec.y,
+				vfx->shape.rec.w,
+				vfx->shape.rec.h);
+		} break;
+		case VFX_SHAPE_TYPE_REC_FILL: {
+			g_rec_fill(
+				vfx->p.x + vfx->shape.rec.x,
+				vfx->p.y + vfx->shape.rec.y,
+				vfx->shape.rec.w,
+				vfx->shape.rec.h);
+		} break;
+		default: {
+			dbg_sentinel("vfx");
+		} break;
+		}
+		g_color(old);
+	} break;
+	default: {
+	} break;
+	}
+
+error:
+	return;
 }

@@ -30,6 +30,6 @@ struct falling_handle board_falling_spawn(struct board *board, struct falling va
 void board_falling_remove(struct board *board, struct falling_handle handle);
 void board_fallings_upd(struct board *board, struct frame_info frame);
 
-i32 board_matches_upd(struct board *board);
+struct board_matches_res board_matches_upd(struct board *board, struct alloc alloc);
 void board_matches_clr(struct board *board);
 void board_fallings_spawn(struct board *board);

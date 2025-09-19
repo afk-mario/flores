@@ -114,7 +114,9 @@ app_draw(void)
 		APP.drw(&APP);
 	}
 
+#if DEBUG
 	g_dbg_drw();
+#endif
 	TRACE_END();
 }
 
@@ -138,6 +140,7 @@ app_resume(void)
 void
 app_set_scrn(struct app *app, enum scrn_type scrn)
 {
+	g_dbg_clr();
 	sys_menu_clr();
 	marena_reset(&app->mem_transient);
 	struct gfx_ctx ctx = gfx_ctx_display();
