@@ -35,3 +35,14 @@
 # 21
 
 - Chill
+
+# POLISH
+
+- Wait a few frames before spawning new piece.
+- Rotation lerp
+- Use SFX sequences instead of single sfx
+
+# BUGS
+
+- Some times matches are not registered correctly
+- Some times after match it get's stuck on `falling` state

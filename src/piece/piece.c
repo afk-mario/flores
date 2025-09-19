@@ -27,18 +27,16 @@ piece_ini(struct piece *piece, f32 timestamp)
 b32
 piece_upd(struct piece *piece, struct board *board, struct frame_info frame)
 {
-	b32 res           = false;
-	f32 timestamp     = frame.timestamp;
-	i32 block_size    = board->block_size;
-	i32 c             = board->columns;
-	i32 r             = board->rows;
-	b32 was_colliding = piece_collides(piece, board, 0, -1);
-	b32 time_up       = piece->timestamp < timestamp;
+	b32 res        = false;
+	f32 timestamp  = frame.timestamp;
+	i32 block_size = board->block_size;
+	i32 c          = board->columns;
+	i32 r          = board->rows;
 
 	piece->btn_buffer = piece_get_btn(piece);
-
 	piece->upd(piece, board, frame);
 
+	b32 time_up      = piece->timestamp < timestamp;
 	b32 is_drop      = piece->fast_drop;
 	b32 is_colliding = piece_collides(piece, board, 0, -1);
 	if(is_colliding && time_up && piece->o.y >= 0) {
@@ -256,8 +254,15 @@ piece_handle_ody(struct piece *piece, struct board *board, i32 ody, f32 timestam
 	i32 res = 0;
 	if(ody == 0) { return res; }
 	i32 block_size   = board->block_size;
-	piece->o.y       = piece->o.y + ody;
-	piece->timestamp = timestamp + PIECE_WAIT;
+	b32 is_colliding = piece_collides(piece, board, 0, -1);
+	i32 noy          = piece->o.y + ody;
+	if(is_colliding) {
+		noy = min_i32(noy, 0);
+	}
+	if(noy != piece->o.y) {
+		piece->timestamp = timestamp + PIECE_WAIT;
+	}
+	piece->o.y = noy;
 
 	if(piece->o.y >= (block_size / 2) - 1) {
 		piece->o.y = (-block_size / 2) + 1;
@@ -312,8 +317,10 @@ piece_do_btn(struct piece *piece, struct board *board, struct frame_info frame)
 		dx = 1;
 	} else if(btn == INP_DPAD_D || inp_pressed(INP_DPAD_D)) {
 		if(collides) {
-			piece->o.y       = 0;
-			piece->timestamp = 0;
+			piece->o.y = 0;
+			if(inp_just_pressed(INP_DPAD_D)) {
+				piece->timestamp = 0;
+			}
 		} else {
 			if(btn == INP_DPAD_D) {
 				g_sfx(G_SFX_MOVE_01, 1);

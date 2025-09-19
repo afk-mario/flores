@@ -7,8 +7,8 @@ DETECTED_OS  := $(shell uname -s)
 DETECTED_OS  := $(strip $(DETECTED_OS))
 
 ifeq ($(DETECTED_OS), Linux)
-all: clean pd_build_sim
-run: pd_run
+all: clean linux_build
+run: linux_run
 endif
 ifeq ($(DETECTED_OS), Darwin)
 all: clean macos_build

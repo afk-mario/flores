@@ -1,5 +1,4 @@
 #include "block.h"
-#include "base/v2.h"
 #include "block/block-defs.h"
 #include "block/block-type.h"
 #include "engine/assets/assets.h"
