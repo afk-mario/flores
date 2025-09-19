@@ -8,6 +8,7 @@
 #include "engine/gfx/gfx-defs.h"
 #include "engine/input.h"
 #include "globals/g-dbg.h"
+#include "globals/g-mus.h"
 #include "lib/pd-utils.h"
 #include "lib/rndm.h"
 #include "sys/sys.h"
@@ -88,7 +89,7 @@ app_tick(f32 dt)
 	if(APP.upd) {
 		APP.upd(&APP, dt);
 	}
-
+	g_mus_upd(dt);
 	debug_draw_clear();
 	debug_draw_do(0, 0);
 	aud_cmd_queue_commit();

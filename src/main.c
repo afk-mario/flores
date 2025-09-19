@@ -42,6 +42,7 @@
 #include "engine/physics/body-ser.c"
 #include "engine/physics/physics.c"
 
+#include "globals/g-mus.c"
 #include "lib/bet/bet-ser.c"
 #include "lib/bet/bet.c"
 #include "lib/fnt/fnt.c"

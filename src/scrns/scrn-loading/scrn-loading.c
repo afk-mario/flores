@@ -9,6 +9,7 @@
 #include "globals/g-fnt-refs.h"
 #include "globals/g-gfx.h"
 #include "globals/g-mus-refs.h"
+#include "globals/g-mus.h"
 #include "globals/g-sfx-refs.h"
 #include "globals/g-tex-refs.h"
 #include "globals/g-ui.h"
@@ -151,6 +152,8 @@ scrn_loading_end(struct loading_state *state, f32 time_start, f32 time_max, void
 			g_txt_style(style, txt_style);
 		}
 	}
+
+	g_mus_play(G_MUS_MAIN, false, true);
 
 #if DEBUG
 	app_set_scrn(app, SCRN_TYPE_GAME);

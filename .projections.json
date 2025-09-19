@@ -2,7 +2,7 @@
   "*.c": { "alternate": "{}.h" },
   "*.h": { "alternate": "{}.c" },
   "*": {
-    "make": "make DEBUG=1 \"CDEFS=-DSYS_LOG_LEVEL=3 -DSOKOL_DISABLE_AUDIO\"",
-    "dispatch": "make run DEBUG=1 \"CDEFS=-DSYS_LOG_LEVEL=3 -DSOKOL_DISABLE_AUDIO\""
+    "make": "make DEBUG=1 \"CDEFS=-DSYS_LOG_LEVEL=3\"",
+    "dispatch": "make run DEBUG=1 \"CDEFS=-DSYS_LOG_LEVEL=3\""
   }
 }

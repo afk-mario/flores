@@ -1,15 +1,20 @@
 #pragma once
 
+#include "base/str.h"
 #include "base/utils.h"
 #include "engine/assets/asset-db.h"
 
 enum g_mus_id {
 	G_MUS_NONE,
 
+	G_MUS_MAIN,
+
 	G_MUS_NUM_COUNT,
 };
 
-static const str8 G_MUS_REFS_PATH_MAP[G_MUS_NUM_COUNT] = {0};
+static const str8 G_MUS_REFS_PATH_MAP[G_MUS_NUM_COUNT] = {
+	[G_MUS_MAIN] = str8_lit_comp("/assets/music/main-01.snd"),
+};
 
 static struct asset_handle G_MUS_REFS_HANDLES[G_MUS_NUM_COUNT];
 
