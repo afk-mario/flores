@@ -11,14 +11,22 @@ enum g_fnt_id {
 	G_FNT_MONOGRAM,
 	G_FNT_PICO8,
 	G_FNT_THICKET,
+	G_FNT_CREAM_12,
+	G_FNT_CREAM_14,
+	G_FNT_CREAM_12_OUTLINE,
+	G_FNT_CREAM_14_OUTLINE,
 
 	G_FNT_NUM_COUNT,
 };
 
 static const str8 G_FNT_PATH_MAP[G_FNT_NUM_COUNT] = {
-	[G_FNT_MONOGRAM] = str8_lit_comp("assets/fonts/monogram-16.fnt"),
-	[G_FNT_PICO8]    = str8_lit_comp("assets/fonts/pico8.fnt"),
-	[G_FNT_THICKET]  = str8_lit_comp("assets/fonts/Thicket-12.fnt"),
+	[G_FNT_MONOGRAM]         = str8_lit_comp("assets/fonts/monogram-16.fnt"),
+	[G_FNT_PICO8]            = str8_lit_comp("assets/fonts/pico8.fnt"),
+	[G_FNT_THICKET]          = str8_lit_comp("assets/fonts/thicket-12.fnt"),
+	[G_FNT_CREAM_12]         = str8_lit_comp("assets/fonts/cream-12.fnt"),
+	[G_FNT_CREAM_14]         = str8_lit_comp("assets/fonts/cream-14.fnt"),
+	[G_FNT_CREAM_12_OUTLINE] = str8_lit_comp("assets/fonts/cream-12-outline.fnt"),
+	[G_FNT_CREAM_14_OUTLINE] = str8_lit_comp("assets/fonts/cream-14-outline.fnt"),
 };
 
 static i32 G_FNT_IDS[G_FNT_NUM_COUNT];
