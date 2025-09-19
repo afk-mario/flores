@@ -76,7 +76,7 @@ block_link_drw(
 	i32 d              = BLOCK_LINK_D;
 	i32 r              = d / 2;
 	i32 block_size_h   = block_size / 2;
-	i32 bg             = GAME_BLOCK_BG[theme];
+	i32 bg             = GAME_BLOCK_LINK[theme];
 	v2_i32 link_offset = {
 		rx * (block_size_h - r),
 		-ry * (block_size_h + r),
