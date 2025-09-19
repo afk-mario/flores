@@ -3,7 +3,7 @@
 #include "globals/g-tex-refs.h"
 #include "scrns/scrn-game/scrn-game-theme.h"
 
-#define GAME_THEME GAME_THEME_SHAPES
+#define GAME_THEME GAME_THEME_ABSTRACT
 #if DEBUG
 // #define GAME_SHOW_COLS
 #endif
