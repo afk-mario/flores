@@ -31,7 +31,7 @@
     {
       "type": "shell",
       "label": "Build Linux",
-      "command": "make clean && make linux_build DEBUG=1 CDEFS=-DSYS_LOG_LEVEL=4",
+      "command": "make clean && make linux_build DEBUG=1 CDEFS=\"-DSYS_LOG_LEVEL=4 -DSOKOL_DISABLE_AUDIO\"",
       "args": [],
       "options": {
         "cwd": "${workspaceFolder}"

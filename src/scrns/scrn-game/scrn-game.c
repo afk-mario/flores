@@ -60,8 +60,8 @@ static inline void scrn_game_vfx_score(struct scrn_game *scrn, i32 x, i32 y, u32
 #define GAME_WALL_W 3
 #define GAME_HUD_W  SYS_DISPLAY_W - (GAME_WALL_W * 2) - (BLOCK_SIZE * (BOARD_COLUMNS * 2)) - 2
 // #define BOARD_FULL
-#define BOARD_PRESET    0
-#define GAME_TIME_SCALE 1.0f
+#define BOARD_PRESET    3
+#define GAME_TIME_SCALE 0.5f
 
 void
 scrn_game_ini(struct app *app)
@@ -150,7 +150,6 @@ scrn_game_upd(struct app *app, f32 dt)
 	// g_dbg_str(piece_to_str(piece, board, scratch));
 	// g_dbg_str(str8_fmt_push(scratch, "chain:%d", scrn->chain));
 	garden_upd(garden, scrn->frame);
-	g_dbg_str(garden->next);
 
 	switch(scrn->state) {
 	case SCRN_GAME_STATE_PAUSE: {
