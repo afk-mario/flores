@@ -15,6 +15,7 @@
 #include "engine/debug-draw/debug-draw.h"
 #include "engine/gfx/gfx.h"
 #include "engine/input.h"
+#include "garden/garden.h"
 #include "globals/g-dbg.h"
 #include "globals/g-sfx-refs.h"
 #include "globals/g-tex-refs.h"
@@ -53,11 +54,14 @@ static inline void scrn_game_exit(struct scrn_game *scrn, enum scrn_type value);
 
 static inline i32 scrn_game_matches(struct scrn_game *scrn);
 static inline rec_i32 scrn_game_get_board_rec(struct scrn_game *scrn);
-static inline void scrn_game_vfx_score(struct scrn_game *scrn, i32 x, i32 y, u32 value);
+static inline rec_i32 scrn_game_get_garden_rec(struct scrn_game *scrn);
+static inline void scrn_game_vfx_score(struct scrn_game *scrn, i32 x, i32 y, u32 value, u32 chain);
 
 #define GAME_WALL_W 3
 #define GAME_HUD_W  SYS_DISPLAY_W - (GAME_WALL_W * 2) - (BLOCK_SIZE * (BOARD_COLUMNS * 2)) - 2
 // #define BOARD_FULL
+#define BOARD_PRESET    0
+#define GAME_TIME_SCALE 1.0f
 
 void
 scrn_game_ini(struct app *app)
@@ -82,15 +86,18 @@ scrn_game_ini(struct app *app)
 		vfxs_init(&scrn->vfxs, 20, alloc);
 	}
 
-	f32 timestamp       = scrn->frame.timestamp;
-	struct board *board = &scrn->board;
+	f32 timestamp         = scrn->frame.timestamp;
+	struct board *board   = &scrn->board;
+	struct garden *garden = &scrn->garden;
 	board_ini(board, timestamp);
+	garden_ini(garden, alloc, timestamp);
 	scrn->editor.type = BLOCK_TYPE_A;
 	scrn->piece       = (struct piece){0};
 	scrn->theme       = GAME_THEME;
 	scrn->exit_to     = SCRN_TYPE_NONE;
 	scrn->score       = 0;
 	scrn->score_ui    = 0;
+	scrn->chain       = 0;
 
 #if defined(BOARD_FULL)
 	enum g_tex_id ref = GAME_THEME_REFS[scrn->theme];
@@ -106,6 +113,18 @@ scrn_game_ini(struct app *app)
 		board_block_set(board, block, p.x, p.y);
 	}
 #else
+	if(BOARD_PRESET > 0) {
+		u8 *preset = GAME_PRESET_BOARDS[BOARD_PRESET];
+		i32 count  = BOARD_ROWS * BOARD_COLUMNS;
+		for(size i = 0; i < count; ++i) {
+			enum block_type type = preset[i];
+			if(type != BLOCK_TYPE_NONE) {
+				v2_i32 p           = board_idx_to_coords(board, i);
+				struct block block = {.type = type};
+				board_block_set(board, block, p.x, (board->rows - 1) - p.y);
+			}
+		}
+	}
 	scrn_game_piece_spawn_rndm(scrn);
 	scrn_game_state_set(scrn, SCRN_GAME_STATE_PLAY);
 #endif
@@ -114,19 +133,24 @@ scrn_game_ini(struct app *app)
 void
 scrn_game_upd(struct app *app, f32 dt)
 {
+	f32 time_scale           = GAME_TIME_SCALE;
 	struct scrn_game *scrn   = &app->scrn_game;
 	struct frame_info *frame = &scrn->frame;
-	frame->timestamp         = frame->timestamp + dt;
-	frame->dt                = dt;
+	frame->dt                = dt * time_scale;
+	frame->timestamp         = frame->timestamp + frame->dt;
 	f32 timestamp            = frame->timestamp;
 	struct alloc scratch     = frame->alloc;
 	marena_reset(&frame->marena);
 
-	struct piece *piece = &scrn->piece;
-	struct board *board = &scrn->board;
+	struct piece *piece   = &scrn->piece;
+	struct board *board   = &scrn->board;
+	struct garden *garden = &scrn->garden;
 
 	g_dbg_str(SCRN_GAME_STATE_LABELS[scrn->state]);
-	g_dbg_str(piece_to_str(piece, board, scratch));
+	// g_dbg_str(piece_to_str(piece, board, scratch));
+	// g_dbg_str(str8_fmt_push(scratch, "chain:%d", scrn->chain));
+	garden_upd(garden, scrn->frame);
+	g_dbg_str(garden->next);
 
 	switch(scrn->state) {
 	case SCRN_GAME_STATE_PAUSE: {
@@ -139,6 +163,7 @@ scrn_game_upd(struct app *app, f32 dt)
 		scrn_game_falling_upd(scrn);
 	} break;
 	case SCRN_GAME_STATE_PLAY: {
+		scrn->chain = 0;
 		scrn_game_play_upd(scrn);
 		board_fallings_upd(board, scrn->frame);
 	} break;
@@ -169,13 +194,16 @@ scrn_game_upd(struct app *app, f32 dt)
 void
 scrn_game_drw(struct app *app)
 {
-	enum g_txt_style style  = G_TXT_STYLE_DEBUG;
-	struct scrn_game *scrn  = &app->scrn_game;
-	struct frame_info frame = scrn->frame;
-	f32 timestamp           = frame.timestamp;
-	struct alloc scratch    = scrn->frame.alloc;
-	struct board *board     = &scrn->board;
-	v2_i32 board_offset     = {GAME_WALL_W, SYS_DISPLAY_H - GAME_WALL_W - (BLOCK_SIZE * board->rows)};
+	enum g_txt_style style     = G_TXT_STYLE_DEBUG;
+	struct scrn_game *scrn     = &app->scrn_game;
+	struct frame_info frame    = scrn->frame;
+	f32 timestamp              = frame.timestamp;
+	struct alloc scratch       = scrn->frame.alloc;
+	struct board *board        = &scrn->board;
+	struct garden *garden      = &scrn->garden;
+	rec_i32 board_rec          = scrn_game_get_board_rec(scrn);
+	rec_i32 garden_rec         = scrn_game_get_garden_rec(scrn);
+	struct v2_i32 board_offset = {board_rec.x, board_rec.y + BLOCK_SIZE};
 
 	g_drw_offset(0, 0);
 	scrn_game_drw_bg(scrn);
@@ -187,10 +215,20 @@ scrn_game_drw(struct app *app)
 		g_drw_offset(x, y);
 		board_drw_dbg(&scrn->board);
 	}
-	g_drw_offset(board_offset.x, board_offset.y);
-	debug_draw_set_offset(board_offset.x, board_offset.y);
-	scrn_game_drw_game(scrn);
-	vfxs_drw(&scrn->matches_vfx, scrn->frame);
+
+	{
+		g_drw_offset(board_offset.x, board_offset.y);
+		debug_draw_set_offset(board_offset.x, board_offset.y);
+		scrn_game_drw_game(scrn);
+		vfxs_drw(&scrn->matches_vfx, scrn->frame);
+	}
+	{
+		g_drw_offset(0, 0);
+		debug_draw_set_offset(0, 0);
+		// debug_draw_rec_fill(REC_UNPACK(garden_rec));
+		garden_drw(garden, garden_rec, scrn->theme);
+	}
+
 	debug_draw_set_offset(0, 0);
 	g_drw_offset(0, 0);
 
@@ -219,12 +257,11 @@ scrn_game_drw(struct app *app)
 	{
 		struct str_join params = {.sep = str8_lit(" ")};
 		struct str8_list list  = {0};
-		v2_i32 offset          = board_offset;
 		v2_i32 rel             = scrn_game_mouse_to_board(scrn);
-		v2_i32 mouse           = v2_add_i32(rel, offset);
+		v2_i32 mouse           = v2_add_i32(rel, board_offset);
 		v2_i32 coords          = board_px_to_coords(board, rel.x, rel.y);
 		v2_i32 coords_px       = board_coords_to_px(board, coords.x, coords.y);
-		rec_i32 tile_rec       = {coords_px.x + offset.x, coords_px.y + offset.y, board->block_size, board->block_size};
+		rec_i32 tile_rec       = {coords_px.x + board_offset.x, coords_px.y + board_offset.y, board->block_size, board->block_size};
 		i32 idx                = board_coords_to_idx(board, coords.x, coords.y);
 		struct block *block    = board_block_get(board, coords.x, coords.y);
 		debug_draw_cir(mouse.x, mouse.y, 3);
@@ -241,7 +278,7 @@ scrn_game_drw(struct app *app)
 			enum g_txt_style style = G_TXT_STYLE_DEBUG_SML;
 			str8 str               = str8_list_join(scratch, &list, &params);
 			v2_i32 size            = g_txt_size(str, style);
-			rec_i32 layout         = rec_i32_anchor(APP_SCRN_REC, rec_i32_expand((rec_i32){SYS_DISPLAY_W, SYS_DISPLAY_H, size.x, size.y}, 1), (v2){1.0f, 1.0f});
+			rec_i32 layout         = rec_i32_anchor(APP_SCRN_REC, rec_i32_expand((rec_i32){SYS_DISPLAY_W, SYS_DISPLAY_H, size.x, size.y}, 1), (v2){0.0f, 1.0f});
 
 			g_color(PRIM_MODE_BLACK);
 			g_rec_fill(REC_UNPACK(layout));
@@ -258,11 +295,12 @@ scrn_game_drw(struct app *app)
 static inline void
 scrn_game_pause_drw(struct scrn_game *scrn)
 {
-	f32 timestamp       = scrn->frame.timestamp;
-	struct board *board = &scrn->board;
-	f32 t               = clamp_f32((timestamp - scrn->t) / 0.2f, 0.0f, 1.0f);
-	rec_i32 rec         = scrn_game_get_board_rec(scrn);
-	str8 str            = str8_lit("PAUSE");
+	f32 timestamp          = scrn->frame.timestamp;
+	struct board *board    = &scrn->board;
+	f32 t                  = clamp_f32((timestamp - scrn->t) / 0.2f, 0.0f, 1.0f);
+	rec_i32 rec            = scrn_game_get_board_rec(scrn);
+	str8 str               = str8_lit("PAUSE");
+	enum g_txt_style style = G_TXT_STYLE_HUD;
 
 	g_color(PRIM_MODE_BLACK);
 
@@ -273,11 +311,10 @@ scrn_game_pause_drw(struct scrn_game *scrn)
 	}
 
 	{
-		f32 alpha              = lerp(0, 1.0f, t);
-		enum g_txt_style style = G_TXT_STYLE_HUD;
-		v2_i32 size            = g_txt_size(str, style);
-		rec_i32 layout         = rec_i32_expand((rec_i32){0, 0, size.x + 1, size.y}, 1);
-		layout                 = rec_i32_anchor(rec, layout, (v2){0.5f, 0.5f});
+		f32 alpha      = lerp(0, 1.0f, t);
+		v2_i32 size    = g_txt_size(str, style);
+		rec_i32 layout = rec_i32_expand((rec_i32){0, 0, size.x + 1, size.y}, 1);
+		layout         = rec_i32_anchor(rec, layout, (v2){0.5f, 0.5f});
 
 		g_pat(gfx_pattern_bayer_4x4(alpha * 16));
 		g_rec_fill(REC_UNPACK(layout));
@@ -294,23 +331,23 @@ scrn_game_over_drw(struct scrn_game *scrn)
 	f32 timestamp       = scrn->frame.timestamp;
 	struct board *board = &scrn->board;
 	f32 t               = clamp_f32((timestamp - scrn->t) / 0.2f, 0.0f, 1.0f);
-	rec_i32 rec         = scrn_game_get_board_rec(scrn);
-	str8 str            = str8_lit("FINISHED!");
+	rec_i32 board_rec   = scrn_game_get_board_rec(scrn);
 
 	g_color(PRIM_MODE_BLACK);
 
 	{
 		f32 alpha = lerp(0, 0.8f, t);
 		g_pat(gfx_pattern_bayer_4x4(alpha * 16));
-		g_rec_fill(rec.x, rec.y, rec.w, rec.h);
+		g_rec_fill(board_rec.x, board_rec.y, board_rec.w, board_rec.h);
 	}
 
 	{
-		f32 alpha              = lerp(0, 1.0f, t);
+		str8 str               = str8_lit("FINISHED!");
 		enum g_txt_style style = G_TXT_STYLE_HUD;
+		f32 alpha              = lerp(0, 1.0f, t);
 		v2_i32 size            = g_txt_size(str, style);
 		rec_i32 layout         = rec_i32_expand((rec_i32){0, 0, size.x + 1, size.y}, 1);
-		layout                 = rec_i32_anchor(rec, layout, (v2){0.5f, 0.5f});
+		layout                 = rec_i32_anchor(board_rec, layout, (v2){0.5f, 0.5f});
 
 		g_pat(gfx_pattern_bayer_4x4(alpha * 16));
 		g_rec_fill(REC_UNPACK(layout));
@@ -319,6 +356,38 @@ scrn_game_over_drw(struct scrn_game *scrn)
 	}
 
 	g_pat(gfx_pattern_white());
+
+	if(timestamp - scrn->t < 1.0f) { return; }
+
+	{
+		str8 str               = str8_lit("Again");
+		enum g_txt_style style = G_TXT_STYLE_STORY;
+		f32 alpha              = lerp(0, 1.0f, t);
+		v2_i32 size            = g_txt_size(str, style);
+		rec_i32 layout         = rec_i32_expand((rec_i32){0, 0, size.x + 1, size.y}, 1);
+		layout                 = rec_i32_anchor(board_rec, layout, (v2){0.5f, 0.5f});
+		layout.x += (size.x * 0.5f) + 2;
+		layout.y += 20;
+
+		g_pat(gfx_pattern_bayer_4x4(alpha * 16));
+		g_rec_fill(REC_UNPACK(layout));
+		g_txt(str, layout.x + 2, layout.y + 2, style);
+	}
+
+	{
+		str8 str               = str8_lit("Back");
+		enum g_txt_style style = G_TXT_STYLE_STORY;
+		f32 alpha              = lerp(0, 1.0f, t);
+		v2_i32 size            = g_txt_size(str, style);
+		rec_i32 layout         = rec_i32_expand((rec_i32){0, 0, size.x + 1, size.y}, 1);
+		layout                 = rec_i32_anchor(board_rec, layout, (v2){0.5f, 0.5f});
+		layout.x -= (size.x * 0.5f) + 5;
+		layout.y += 20;
+
+		g_pat(gfx_pattern_bayer_4x4(alpha * 16));
+		g_rec_fill(REC_UNPACK(layout));
+		g_txt(str, layout.x + 2, layout.y + 2, style);
+	}
 }
 
 static inline void
@@ -515,6 +584,7 @@ static inline void
 scrn_game_play_upd(struct scrn_game *scrn)
 {
 	struct board *board     = &scrn->board;
+	struct garden *garden   = &scrn->garden;
 	struct piece *piece     = &scrn->piece;
 	struct frame_info frame = scrn->frame;
 	struct alloc scratch    = scrn->frame.alloc;
@@ -523,7 +593,7 @@ scrn_game_play_upd(struct scrn_game *scrn)
 	f32 timestamp           = frame.timestamp;
 
 	board_fallings_spawn(board);
-	board_upd(&scrn->board, frame);
+	board_upd(board, frame);
 
 	piece_collided = piece_upd(piece, board, frame);
 	if(piece_collided) {
@@ -555,6 +625,9 @@ scrn_game_play_upd(struct scrn_game *scrn)
 static inline void
 scrn_game_pause_upd(struct scrn_game *scrn)
 {
+	f32 timestamp = scrn->frame.timestamp;
+	f32 t         = (timestamp - scrn->t);
+	if(t < 0.4f) { return; }
 	if(inp_key_just_pressed('p')) {
 		scrn_game_state_pop(scrn);
 	}
@@ -647,6 +720,9 @@ scrn_game_collapse_upd(struct scrn_game *scrn)
 static inline void
 scrn_game_over_upd(struct scrn_game *scrn)
 {
+	f32 timestamp = scrn->frame.timestamp;
+	f32 t         = (timestamp - scrn->t);
+	if(t < 1.0f) { return; }
 	if(g_ui_was_pressed(G_UI_ACCEPT)) {
 		scrn_game_exit(scrn, SCRN_TYPE_GAME);
 	}
@@ -706,8 +782,21 @@ scrn_game_get_board_rec(struct scrn_game *scrn)
 	return res;
 }
 
+static inline rec_i32
+scrn_game_get_garden_rec(struct scrn_game *scrn)
+{
+	rec_i32 res         = {0};
+	struct board *board = &scrn->board;
+	i32 w               = (board->columns * board->block_size) + 1;
+	res.x               = GAME_WALL_W + GAME_HUD_W + w;
+	res.y               = 0;
+	res.w               = w;
+	res.h               = SYS_DISPLAY_H - GAME_WALL_W;
+	return res;
+}
+
 static inline void
-scrn_game_vfx_score(struct scrn_game *scrn, i32 x, i32 y, u32 value)
+scrn_game_vfx_score(struct scrn_game *scrn, i32 x, i32 y, u32 value, u32 chain)
 {
 	f32 timestamp   = scrn->frame.timestamp;
 	v2_i32 offset   = g_drw_offset(0, 0);
@@ -730,7 +819,7 @@ scrn_game_vfx_score(struct scrn_game *scrn, i32 x, i32 y, u32 value)
 	struct marena arena      = {0};
 	marena_init(&arena, vfx->txt.buf, ARRLEN(vfx->txt.buf) * sizeof(vfx->txt.buf));
 	struct alloc alloc = marena_allocator(&arena);
-	str8 str           = str8_to_upper(alloc, str8_fmt_push(alloc, "%" PRIu32, value));
+	str8 str           = str8_fmt_push(alloc, "%" PRIu32 " Chain", chain);
 	vfx->txt.str       = str;
 }
 
@@ -743,6 +832,8 @@ scrn_game_matches(struct scrn_game *scrn)
 	i32 block_size                   = board->block_size;
 
 	switch(matches.total) {
+	case 0: {
+	} break;
 	case 2: {
 		g_sfx(G_SFX_MATCH_02, 1);
 	} break;
@@ -757,9 +848,11 @@ scrn_game_matches(struct scrn_game *scrn)
 	} break;
 	}
 
+	u32 chain_end = scrn->chain + matches.groups.len;
 	for(size i = 0; i < matches.groups.len; ++i) {
 		v2_i32 p         = {.y = I32_MAX};
 		size group_count = matches.groups.items[i].len;
+		scrn->chain++;
 		for(size j = 0; j < group_count; ++j) {
 			i16 idx   = matches.groups.items[i].items[j];
 			v2_i32 px = board_idx_to_px(board, idx);
@@ -767,8 +860,8 @@ scrn_game_matches(struct scrn_game *scrn)
 			p.y       = min_i32(px.y, p.y);
 		}
 		p.x       = p.x / group_count;
-		u32 score = 100 * (group_count - 3);
-		scrn_game_vfx_score(scrn, p.x, p.y, score);
+		u32 score = (1 * (group_count - 3)) * scrn->chain;
+		scrn_game_vfx_score(scrn, p.x, p.y, score, scrn->chain);
 		scrn->score += score;
 	}
 

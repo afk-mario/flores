@@ -69,12 +69,6 @@ scrn_loading_upd(struct app *app, f32 dt)
 				(uint)left,
 				(uint)total);
 		}
-	} else {
-#if DEBUG
-		app_set_scrn(app, SCRN_TYPE_GAME);
-#else
-		app_set_scrn(app, SCRN_TYPE_TITLE);
-#endif
 	}
 
 	TRACE_END();
@@ -155,6 +149,21 @@ scrn_loading_end(struct loading_state *state, f32 time_start, f32 time_max, void
 
 	{
 		enum g_txt_style style = G_TXT_STYLE_STORY;
+		enum g_fnt_id id       = g_fnt_refs_id_get(G_FNT_CREAM_12);
+		if(id > 0) {
+			struct fnt fnt = asset_fnt(id);
+			dbg_assert(fnt.t.px);
+			struct txt_style txt_style = {
+				.fnt      = fnt,
+				.tracking = 1,
+				.leading  = 0,
+				.mode     = SPR_MODE_WHITE,
+			};
+			g_txt_style(style, txt_style);
+		}
+	}
+	{
+		enum g_txt_style style = G_TXT_STYLE_STORY_TITLES;
 		enum g_fnt_id id       = g_fnt_refs_id_get(G_FNT_CREAM_14);
 		if(id > 0) {
 			struct fnt fnt = asset_fnt(id);
@@ -168,16 +177,18 @@ scrn_loading_end(struct loading_state *state, f32 time_start, f32 time_max, void
 			g_txt_style(style, txt_style);
 		}
 	}
+
 	{
 		enum g_txt_style style = G_TXT_STYLE_VFX;
-		enum g_fnt_id id       = g_fnt_refs_id_get(G_FNT_CREAM_14_OUTLINE);
+		enum g_fnt_id id       = g_fnt_refs_id_get(G_FNT_THICKET_OUTLINE);
 		if(id > 0) {
 			struct fnt fnt = asset_fnt(id);
 			dbg_assert(fnt.t.px);
 			struct txt_style txt_style = {
 				.fnt      = fnt,
-				.tracking = 0,
+				.tracking = -2,
 				.leading  = 0,
+				.mode     = SPR_MODE_COPY,
 			};
 			g_txt_style(style, txt_style);
 		}

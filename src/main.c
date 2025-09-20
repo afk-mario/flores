@@ -57,6 +57,7 @@
 #include "block/block.c"
 #include "board/board.c"
 #include "falling/falling.c"
+#include "garden/garden.c"
 #include "piece/piece.c"
 #include "vfx/vfx.c"
 

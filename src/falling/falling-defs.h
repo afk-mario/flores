@@ -2,7 +2,7 @@
 
 #include "block/block-type.h"
 
-#define FALLING_SPD 2
+#define FALLING_SPD 100
 
 struct falling_handle {
 	i16 id;

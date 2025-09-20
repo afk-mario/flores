@@ -1,5 +1,7 @@
 #pragma once
 
+#include "base/types.h"
+#include "board/board-defs.h"
 #include "globals/g-tex-refs.h"
 #include "scrns/scrn-game/scrn-game-theme.h"
 
@@ -40,3 +42,49 @@ static enum g_tex_id GAME_THEME_REFS[GAME_THEME_NUM_COUNT] = {
 	[GAME_THEME_SEEDS]    = G_TEX_SEEDS,
 	[GAME_THEME_ABSTRACT] = G_TEX_ABSTRACT_SEEDS,
 };
+
+#define NUM_BOARDS 10
+// clang-format off
+static u8 GAME_PRESET_BOARDS[NUM_BOARDS][BOARD_COLUMNS * BOARD_ROWS]= {
+  [0] = {
+		0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0,
+  },
+  [1] = {
+		0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0,
+		0, 1, 5, 5, 4, 0,
+		0, 5, 5, 3, 5, 0,
+		0, 5, 2, 5, 5, 0,
+		1, 2, 3, 4, 1, 1,
+		1, 2, 3, 4, 1, 5,
+		1, 2, 3, 4, 1, 5,
+  },
+  [2] = {
+		0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0,
+		0, 1, 3, 4, 5, 0,
+		0, 2, 1, 3, 4, 5,
+		0, 2, 1, 3, 4, 5,
+		2, 2, 1, 3, 4, 5,
+  },
+  [3] = {
+		0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0,
+		0, 1, 3, 4, 5, 0,
+		0, 2, 1, 3, 4, 5,
+		0, 2, 1, 3, 4, 5,
+		2, 2, 1, 3, 4, 5,
+		0, 0, 0, 0, 0, 0,
+  },
+};
+// clang-format on

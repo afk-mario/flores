@@ -7,8 +7,10 @@
 #include "piece/piece-data.h"
 
 b32
-falling_upd(struct falling *falling, struct board *board, f32 timestamp)
+falling_upd(struct falling *falling, struct board *board, struct frame_info frame)
 {
+	f32 timestamp  = frame.timestamp;
+	f32 dt         = frame.dt;
 	b32 res        = false;
 	i32 ody        = FALLING_SPD;
 	i32 block_size = board->block_size;
@@ -20,7 +22,7 @@ falling_upd(struct falling *falling, struct board *board, f32 timestamp)
 	if(col) { return true; }
 
 	falling->dy        = min_f32(falling->dy + 0.4f, 5.0f);
-	falling->o.y       = falling->o.y + (FALLING_SPD * falling->dy);
+	falling->o.y       = falling->o.y + ((FALLING_SPD * dt) * falling->dy);
 	falling->timestamp = timestamp + PIECE_WAIT;
 
 	if(falling->o.y < block_size) { return res; }

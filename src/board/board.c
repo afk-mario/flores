@@ -47,7 +47,7 @@ board_fallings_upd(struct board *board, struct frame_info frame)
 	for(size i = 0; i < (size)ARRLEN(board->fallings); ++i) {
 		struct falling *falling = board->fallings + i;
 		if(falling->id == 0) { continue; }
-		if(falling_upd(falling, board, timestamp)) {
+		if(falling_upd(falling, board, frame)) {
 			board_falling_remove(board, (struct falling_handle){.id = i});
 			struct block block = {.type = falling->type};
 			board_block_set(board, block, falling->p.x, falling->p.y);
