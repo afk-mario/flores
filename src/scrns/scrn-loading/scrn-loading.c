@@ -5,6 +5,7 @@
 #include "base/trace.h"
 #include "base/utils.h"
 #include "engine/assets/assets.h"
+#include "garden/garden.h"
 #include "globals/g-dbg.h"
 #include "globals/g-fnt-refs.h"
 #include "globals/g-gfx.h"

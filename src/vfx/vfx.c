@@ -11,7 +11,7 @@ vfxs_init(struct vfxs *pool, size count, struct alloc alloc)
 	dbg_assert(count < U8_MAX);
 	dbg_assert(count > 0);
 	pool->count       = 0;
-	pool->items       = arr_new(pool->items, count, alloc);
+	pool->items       = arr_new_clr(pool->items, count, alloc);
 	pool->free_list   = arr_new(pool->free_list, count, alloc);
 	pool->generations = arr_new(pool->generations, count, alloc);
 

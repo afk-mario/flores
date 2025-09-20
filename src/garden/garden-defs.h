@@ -4,37 +4,22 @@
 #include "base/mem.h"
 #include "base/types.h"
 #include "block/block-type.h"
+#include "board/board-defs.h"
 #include "engine/gfx/gfx.h"
+#include "garden/flower-defs.h"
 
-struct garden_state {
-	v2_i32 p;
-	f32 angle;
-	rot2 rot;
-};
-
-struct garden_rules {
-	str8 axiom;
-	str8 rules[127];
-	f32 angle_delta;
-	f32 length;
-	i32 iterations_max;
-};
+#define GARDEN_FLOWERS_MAX          12
+#define GARDEN_FLOWERS_MAX_PER_CELL 1
 
 struct garden_cell {
-	u8 iterations;
-	u8 length;
-	f32 angle_delta;
-	f32 start_angle;
-	str8 axiom;
-	str8 next;
-	v2_i32 offset;
-	f32 timestamp;
-	struct gfx_ctx ctx;
-	struct alloc alloc;
-	struct marena marena;
-	enum block_type type;
+	u16 count;
+	u16 handles[GARDEN_FLOWERS_MAX_PER_CELL];
 };
 
 struct garden {
-	struct garden_cell cells[6];
+	b32 is_loaded;
+	struct tex *textures;
+	i32 flower_idx;
+	struct flower *flowers;
+	struct garden_cell cells[BOARD_COLUMNS];
 };

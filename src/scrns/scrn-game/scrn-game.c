@@ -60,8 +60,9 @@ static inline void scrn_game_vfx_score(struct scrn_game *scrn, i32 x, i32 y, u32
 #define GAME_WALL_W 3
 #define GAME_HUD_W  SYS_DISPLAY_W - (GAME_WALL_W * 2) - (BLOCK_SIZE * (BOARD_COLUMNS * 2)) - 2
 // #define BOARD_FULL
-#define BOARD_PRESET    3
-#define GAME_TIME_SCALE 0.5f
+
+#define BOARD_PRESET    1
+#define GAME_TIME_SCALE 1.0f
 
 void
 scrn_game_ini(struct app *app)
@@ -90,7 +91,11 @@ scrn_game_ini(struct app *app)
 	struct board *board   = &scrn->board;
 	struct garden *garden = &scrn->garden;
 	board_ini(board, timestamp);
-	garden_ini(garden, alloc, timestamp);
+	{
+		struct rec_i32 rec = scrn_game_get_garden_rec(scrn);
+		garden_load(&app->scrn_game.garden, (v2_i32){rec.w, rec.h}, ASSETS.alloc);
+		garden_ini(garden, alloc, timestamp);
+	}
 	scrn->editor.type = BLOCK_TYPE_A;
 	scrn->piece       = (struct piece){0};
 	scrn->theme       = GAME_THEME;
@@ -206,8 +211,6 @@ scrn_game_drw(struct app *app)
 
 	g_drw_offset(0, 0);
 	scrn_game_drw_bg(scrn);
-	scrn_game_drw_walls(scrn);
-	scrn_game_drw_hud(scrn);
 	{
 		i32 x = (SYS_DISPLAY_W * 0.5f) - ((scrn->board.columns) * 0.5f);
 		i32 y = SYS_DISPLAY_H - 20;
@@ -230,6 +233,8 @@ scrn_game_drw(struct app *app)
 
 	debug_draw_set_offset(0, 0);
 	g_drw_offset(0, 0);
+	scrn_game_drw_walls(scrn);
+	scrn_game_drw_hud(scrn);
 
 	switch(scrn->state) {
 	case SCRN_GAME_STATE_PAUSE: {
@@ -826,7 +831,9 @@ static inline i32
 scrn_game_matches(struct scrn_game *scrn)
 {
 	struct board *board              = &scrn->board;
+	struct garden *garden            = &scrn->garden;
 	struct alloc scratch             = scrn->frame.alloc;
+	f32 timestamp                    = scrn->frame.timestamp;
 	struct board_matches_res matches = board_matches_upd(board, scratch);
 	i32 block_size                   = board->block_size;
 
@@ -849,19 +856,31 @@ scrn_game_matches(struct scrn_game *scrn)
 
 	u32 chain_end = scrn->chain + matches.groups.len;
 	for(size i = 0; i < matches.groups.len; ++i) {
-		v2_i32 p         = {.y = I32_MAX};
-		size group_count = matches.groups.items[i].len;
+		v2_i32 p                       = {.y = I32_MAX};
+		size group_count               = matches.groups.items[i].len;
+		u8 column_count[BOARD_COLUMNS] = {0};
+		enum block_type type           = BLOCK_TYPE_NONE;
 		scrn->chain++;
 		for(size j = 0; j < group_count; ++j) {
-			i16 idx   = matches.groups.items[i].items[j];
-			v2_i32 px = board_idx_to_px(board, idx);
-			p.x       = p.x + (px.x + block_size * 0.5f);
-			p.y       = min_i32(px.y, p.y);
+			i16 idx       = matches.groups.items[i].items[j];
+			type          = board->blocks[idx].type;
+			v2_i32 coords = board_idx_to_coords(board, idx);
+			v2_i32 px     = board_idx_to_px(board, idx);
+			p.x           = p.x + (px.x + block_size * 0.5f);
+			p.y           = min_i32(px.y, p.y);
+			column_count[coords.y]++;
 		}
 		p.x       = p.x / group_count;
 		u32 score = (1 * (group_count - 3)) * scrn->chain;
 		scrn_game_vfx_score(scrn, p.x, p.y, score, scrn->chain);
 		scrn->score += score;
+		i32 column_with_more = 0;
+		for(size i = 0; i < (size)ARRLEN(column_count); ++i) {
+			if(column_count[i] > column_count[column_with_more]) {
+				column_with_more = i;
+			}
+		}
+		garden_seed_add(garden, column_with_more, type, timestamp);
 	}
 
 	if(matches.total > 0) {
