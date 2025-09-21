@@ -5,7 +5,10 @@
 
 void flower_ini(struct flower *flower, struct alloc alloc, struct tex t);
 void flower_upd(struct flower *flower, struct frame_info frame);
-void flower_drw(struct flower *flower, i32 x, i32 y);
+void flower_drw(struct flower *flower, i32 x, i32 y, i32 day);
+
+void flower_water_add(struct flower *flower, i32 value, struct frame_info frame);
+
 void flower_iterations_max(struct flower *flower, struct frame_info frame);
 void flower_iterations_set(struct flower *flower, i32 value, struct frame_info frame);
 void flower_iterations_add(struct flower *flower, i32 value, struct frame_info frame);

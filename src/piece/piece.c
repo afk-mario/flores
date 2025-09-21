@@ -16,17 +16,21 @@ static inline void piece_bump(struct piece *piece, i32 direction, f32 timestamp)
 static inline void piece_do_btn(struct piece *piece, struct board *board, struct frame_info frame);
 static inline void piece_rotate(struct piece *piece, struct board *board, i32 direction, struct frame_info frame);
 
+#define PIECE_TIME_DISABLE 0.2f
+
 void
 piece_ini(struct piece *piece, f32 timestamp)
 {
-	piece->timestamp = timestamp + PIECE_WAIT;
-	piece->upd       = piece_upd_inp;
-	piece->rot       = 0;
+	piece->timestamp         = timestamp + PIECE_TIME_DISABLE + PIECE_WAIT;
+	piece->timestamp_disable = timestamp + PIECE_TIME_DISABLE;
+	piece->upd               = piece_upd_inp;
+	piece->rot               = 0;
 }
 
 b32
 piece_upd(struct piece *piece, struct board *board, struct frame_info frame)
 {
+	if(piece->timestamp_disable > frame.timestamp) { return false; }
 	b32 res        = false;
 	f32 timestamp  = frame.timestamp;
 	i32 block_size = board->block_size;

@@ -11,10 +11,10 @@
 #include "globals/g-gfx.h"
 #include "globals/g-tex-refs.h"
 #include "lib/rndm.h"
-#include "sys/sys-sokol.h"
 
-#define FLOWER_ANGLE_DELTA 25
-#define FLOWER_ANGLE_START -90
+#define FLOWER_ANGLE_DELTA      25
+#define FLOWER_ANGLE_START      -90
+#define FLOWER_WATER_FOR_GROWTH 10
 
 static inline void flower_bud_drw(struct flower *flower, i32 stage, i32 x, i32 y);
 
@@ -47,16 +47,20 @@ flower_upd(struct flower *flower, struct frame_info frame)
 	flower->start_angle        = angle_start - wind;
 	// flower->length             = lerp(0, rules->length, t);
 	// flower->angle_delta          = lerp(0, rules->angle_delta, t) * DEG_TO_TURN;
-	tex_clr(flower->ctx.dst, GFX_COL_CLEAR);
-	flower_upd_tex(flower, frame.alloc, t);
+	flower_upd_tex(flower, frame.alloc, 1.0f);
 }
 
 void
-flower_drw(struct flower *flower, i32 x, i32 y)
+flower_drw(struct flower *flower, i32 x, i32 y, i32 day)
 {
 	if(flower->type == BLOCK_TYPE_NONE) { return; }
 	struct tex t           = flower->ctx.dst;
 	struct tex_rec tex_rec = {.t = t, .r = {0, 0, t.w, t.h}};
+	if(day) {
+		g_spr_mode(SPR_MODE_COPY);
+	} else {
+		g_spr_mode(SPR_MODE_INV);
+	}
 	g_spr_piv(tex_rec, flower->p.x + x, flower->p.y + y, 0, (v2){0.5f, 0.0f});
 }
 
@@ -76,9 +80,30 @@ flower_type_set(struct flower *flower, enum block_type type, struct frame_info f
 	flower->length             = rules->length + len_rndm;
 	flower->start_angle_og     = (FLOWER_ANGLE_START + angle_start_rndm) * DEG_TO_TURN;
 	flower->start_angle        = flower->start_angle_og;
-	flower->water              = 50;
+	flower->water              = 0;
 	flower->timestamp          = frame.timestamp;
 	flower_reevaluate(flower, frame);
+}
+
+void
+flower_water_add(struct flower *flower, i32 value, struct frame_info frame)
+{
+	i32 water                  = flower->water + value;
+	flower->water              = water;
+	i32 iterations_to_add      = 0;
+	struct flower_rules *rules = FLOWERS_RULES + flower->type;
+	while(flower->water > FLOWER_WATER_FOR_GROWTH) {
+		flower->water = flower->water - 10;
+		iterations_to_add++;
+		if(flower->iterations + iterations_to_add >= rules->iterations_max) {
+			break;
+		}
+	}
+	if(iterations_to_add > 0) {
+		flower_iterations_add(flower, iterations_to_add, frame);
+	} else {
+		flower_upd_tex(flower, frame.alloc, 1.0f);
+	}
 }
 
 void
@@ -120,7 +145,6 @@ flower_reevaluate(struct flower *flower, struct frame_info frame)
 	log_info("garden", "Rem: %$$u Used: %$$u type: %s", (uint)flower->marena.rem, (uint)flower->marena.buf_size - flower->marena.rem, BLOCK_TYPE_LABELS[flower->type]);
 	flower->next = next;
 
-	tex_clr(flower->ctx.dst, GFX_COL_CLEAR);
 	flower_upd_tex(flower, frame.alloc, 1.0f);
 }
 
@@ -146,6 +170,7 @@ flower_generate(struct alloc alloc, struct flower_rules *rules, struct str8 axio
 void
 flower_upd_tex(struct flower *flower, struct alloc scratch, f32 t)
 {
+	tex_clr(flower->ctx.dst, GFX_COL_CLEAR);
 	struct gfx_ctx old             = g_drw_ctx(flower->ctx);
 	i32 length                     = flower->length;
 	f32 angle_delta                = flower->angle_delta;
@@ -251,7 +276,7 @@ flower_upd_tex(struct flower *flower, struct alloc scratch, f32 t)
 		if(water_total > 0) {
 			while(water_total > 0) {
 				b32 one_empty = false;
-				for(size i = 0; i < (size)ARRLEN(buds); ++i) {
+				for(size i = ARRLEN(buds) - 1; i > 0; --i) {
 					struct flower_bud *bud = buds + i;
 					if(bud->water == 0) { continue; }
 					if(bud->water > 3) { continue; }
@@ -272,10 +297,10 @@ flower_upd_tex(struct flower *flower, struct alloc scratch, f32 t)
 			}
 			for(size i = 0; i < (size)ARRLEN(buds); ++i) {
 				struct flower_bud *bud = buds + i;
-				if(bud->water < 2) { continue; }
+				if(bud->water < 1) { continue; }
 				flower_bud_drw(
 					flower,
-					bud->water - 2,
+					bud->water - 1,
 					bud->x,
 					bud->y);
 			}
@@ -287,15 +312,15 @@ flower_upd_tex(struct flower *flower, struct alloc scratch, f32 t)
 static inline void
 flower_bud_drw(struct flower *flower, i32 stage, i32 x, i32 y)
 {
-	i32 ref                = FLOWERS_TEX_MAP[flower->type];
-	i32 id                 = g_tex_refs_id_get(ref);
-	struct tex t           = asset_tex(id);
-	i32 cells              = t.w / t.h;
-	i32 frame              = stage % (cells - 1);
-	struct tex_rec tex_rec = asset_tex_rec(id, t.h * frame, 0, t.h, t.h);
-#if 1
-	g_spr_piv(tex_rec, x, y, 0, (v2){0.5f, 0.5f});
-#else
-	g_cir_fill(x, y, 3 + stage);
-#endif
+	i32 ref      = FLOWERS_TEX_MAP[flower->type];
+	i32 id       = g_tex_refs_id_get(ref);
+	struct tex t = asset_tex(id);
+	i32 cells    = t.w / t.h;
+	if(stage == 0) {
+		g_cir_fill(x, y, 3 + stage);
+	} else {
+		i32 frame              = (stage - 1) % (cells - 1);
+		struct tex_rec tex_rec = asset_tex_rec(id, t.h * frame, 0, t.h, t.h);
+		g_spr_piv(tex_rec, x, y, 0, (v2){0.5f, 0.5f});
+	}
 }

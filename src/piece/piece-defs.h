@@ -19,6 +19,7 @@ struct piece {
 	f32 ani_timestamp;
 	f32 ani_duration;
 	f32 timestamp;
+	f32 timestamp_disable;
 	enum block_type types[2];
 	void (*upd)(struct piece *piece, struct board *board, struct frame_info frame);
 };

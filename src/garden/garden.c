@@ -55,44 +55,75 @@ garden_ini(struct garden *garden, struct alloc alloc, struct frame_info frame)
 			enum block_type type  = rndm_range_i32(NULL, BLOCK_TYPE_A, BLOCK_TYPE_F);
 			u16 handle            = garden_flower_spawn(garden, column, type, frame);
 			struct flower *flower = garden->flowers + handle;
-			flower_iterations_max(flower, frame);
+			// flower_iterations_max(flower, frame);
+			flower_water_add(flower, rndm_range_i32(NULL, 20, 100), frame);
 			cell->handles[j] = handle;
 		}
 	}
 #endif
 
-#if 1
+#if 0
 	enum block_type type  = BLOCK_TYPE_F;
 	u16 handle            = garden_flower_spawn(garden, 2, type, frame);
 	struct flower *flower = garden->flowers + handle;
 	flower_iterations_max(flower, frame);
 #endif
+
+	{
+		garden->time.day       = 1;
+		garden->time.hour      = 7;
+		garden->time.is_day    = true;
+		garden->time.timestamp = frame.timestamp;
+	}
 }
 
-void
+b32
 garden_seed_add(struct garden *garden, i32 column, enum block_type type, struct frame_info frame)
 {
 	dbg_assert(type != BLOCK_TYPE_NONE);
 	dbg_assert(column < (size)(ARRLEN(garden->cells)));
+	b32 res                  = false;
 	struct garden_cell *cell = garden->cells + column;
 
-	for(size i = 0; i < (size)ARRLEN(cell->handles); ++i) {
-		u16 handle                 = cell->handles[i];
-		struct flower *flower      = garden->flowers + handle;
-		struct flower_rules *rules = FLOWERS_RULES + flower->type;
-		if(flower->type == type && flower->iterations < rules->iterations_max) {
-			flower_iterations_add(flower, 1, frame);
-			return;
-		} else {
-			// replace one of the flowers with a new one?
-		}
-	}
-
+	// TODO: Check if flower is full and reset
 	for(size i = 0; i < (size)ARRLEN(cell->handles); ++i) {
 		u16 handle = cell->handles[i];
 		if(handle == 0) {
 			cell->handles[i] = garden_flower_spawn(garden, column, type, frame);
-			return;
+			return true;
+		}
+	}
+
+	return false;
+}
+
+void
+garden_time_adv(struct garden *garden, struct frame_info frame)
+{
+	struct garden_time *tim = &garden->time;
+	tim->timestamp          = frame.timestamp;
+	tim->hour++;
+	if(tim->hour > 12) {
+		tim->hour   = 0;
+		tim->is_day = !tim->is_day;
+		if(tim->is_day) {
+			tim->day++;
+		}
+	}
+}
+
+void
+garden_water_add(struct garden *garden, i32 column, i32 value, struct frame_info frame)
+{
+	dbg_assert(column < (size)(ARRLEN(garden->cells)));
+	struct garden_cell *cell = garden->cells + column;
+
+	// TODO: Check if flower is full and reset
+	for(size i = 0; i < (size)ARRLEN(cell->handles); ++i) {
+		u16 handle = cell->handles[i];
+		if(handle != 0) {
+			struct flower *flower = garden->flowers + handle;
+			flower_water_add(flower, value, frame);
 		}
 	}
 }
@@ -110,19 +141,40 @@ garden_upd(struct garden *garden, struct frame_info frame)
 		}
 	}
 
-	for(size i = 1; i < (size)arr_len(garden->flowers); ++i) {
-		struct flower *flower = garden->flowers + i;
-		flower_upd(flower, frame);
+	struct flower *flower = garden->flowers + (garden->slicing.index + 1);
+	flower_upd(flower, frame);
+	garden->slicing.index = (garden->slicing.index + 1) % (arr_len(garden->flowers) - 1);
+	if((garden->time.timestamp + 30.0f) < frame.timestamp) {
+		garden_time_adv(garden, frame);
 	}
 }
 
 void
 garden_drw(struct garden *garden, rec_i32 rec, enum game_theme theme)
 {
+	struct garden_time *tim = &garden->time;
+	i32 is_day              = tim->is_day;
+	f32 alpha               = 1.0f;
+	is_day                  = true;
+	if(tim->hour < 6) {
+		alpha = clamp_f32(lerp_inv(0, 4, tim->hour), 0.0f, 1.0f);
+	} else {
+		alpha = 1.0f - clamp_f32(lerp_inv(8, 12, tim->hour), 0.0f, 1.0f);
+	}
+	alpha = max_f32(alpha, 0.2f);
+	alpha = 1.0f;
+	if(is_day) {
+		g_color(PRIM_MODE_WHITE);
+	} else {
+		g_color(PRIM_MODE_BLACK);
+	}
+	g_rec_fill(REC_UNPACK(rec));
+	g_pat(gfx_pattern_bayer_4x4(alpha * 16));
 	for(size i = 1; i < (size)arr_len(garden->flowers); ++i) {
 		struct flower *flower = garden->flowers + i;
-		flower_drw(flower, rec.x, rec.y);
+		flower_drw(flower, rec.x, rec.y, is_day);
 	}
+	g_pat(gfx_pattern_100());
 }
 
 u16
