@@ -34,6 +34,8 @@ struct scrn_game {
 	u32 score;
 	u32 score_ui;
 	u32 chain;
+	b32 transition_out;
+	f32 transition_out_t;
 	struct scrn_game_piece_lists piece_lists;
 	enum scrn_type exit_to;
 	enum scrn_game_state prev_state;

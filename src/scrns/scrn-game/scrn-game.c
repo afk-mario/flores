@@ -71,6 +71,8 @@ static inline void scrn_game_piece_peek_next_two(struct scrn_game_piece_lists *l
 #define GAME_TIME_SCALE 1.0f
 #endif
 
+#define SCRN_TRANSITION_DURATION 1.0f
+
 void
 scrn_game_ini(struct app *app)
 {
@@ -127,13 +129,15 @@ scrn_game_ini(struct app *app)
 		garden_load(&app->scrn_game.garden, (v2_i32){rec.w, rec.h}, ASSETS.alloc);
 		garden_ini(garden, alloc, scrn->frame);
 	}
-	scrn->editor.type = BLOCK_TYPE_A;
-	scrn->piece       = (struct piece){0};
-	scrn->theme       = GAME_THEME;
-	scrn->exit_to     = SCRN_TYPE_NONE;
-	scrn->score       = 0;
-	scrn->score_ui    = 0;
-	scrn->chain       = 0;
+	scrn->editor.type      = BLOCK_TYPE_A;
+	scrn->piece            = (struct piece){0};
+	scrn->theme            = GAME_THEME;
+	scrn->exit_to          = SCRN_TYPE_NONE;
+	scrn->score            = 0;
+	scrn->score_ui         = 0;
+	scrn->chain            = 0;
+	scrn->transition_out   = false;
+	scrn->transition_out_t = 0;
 
 #if defined(BOARD_FULL)
 	enum g_tex_id ref = GAME_THEME_REFS[scrn->theme];
@@ -162,7 +166,7 @@ scrn_game_ini(struct app *app)
 		}
 	}
 	scrn_game_piece_spawn_rndm(scrn);
-	scrn_game_state_set(scrn, SCRN_GAME_STATE_PLAY);
+	scrn_game_state_set(scrn, SCRN_GAME_STATE_TRANSITION_IN);
 #endif
 }
 
@@ -187,6 +191,13 @@ scrn_game_upd(struct app *app, f32 dt)
 	// g_dbg_str(str8_fmt_push(scratch, "chain:%d", scrn->chain));
 	garden_upd(garden, scrn->frame);
 
+	if(scrn->transition_out) {
+		if(scrn->transition_out_t + SCRN_TRANSITION_DURATION < scrn->frame.timestamp) {
+			app_set_scrn(app, scrn->exit_to);
+		}
+		return;
+	}
+
 	switch(scrn->state) {
 	case SCRN_GAME_STATE_PAUSE: {
 		scrn_game_pause_upd(scrn);
@@ -208,6 +219,13 @@ scrn_game_upd(struct app *app, f32 dt)
 	case SCRN_GAME_STATE_OVER: {
 		scrn_game_over_upd(scrn);
 	} break;
+	case SCRN_GAME_STATE_TRANSITION_IN: {
+		if(scrn->t + SCRN_TRANSITION_DURATION < scrn->frame.timestamp) {
+			scrn_game_state_set(scrn, SCRN_GAME_STATE_PLAY);
+		}
+	} break;
+	case SCRN_GAME_STATE_TRANSITION_OUT: {
+	} break;
 	default: {
 	} break;
 	}
@@ -220,10 +238,6 @@ scrn_game_upd(struct app *app, f32 dt)
 
 	vfxs_upd(&scrn->matches_vfx, scrn->frame);
 	vfxs_upd(&scrn->vfxs, scrn->frame);
-
-	if(scrn->exit_to != SCRN_TYPE_NONE) {
-		app_set_scrn(app, scrn->exit_to);
-	}
 }
 
 void
@@ -278,6 +292,25 @@ scrn_game_drw(struct app *app)
 	}
 
 	vfxs_drw(&scrn->vfxs, scrn->frame);
+
+	if(scrn->state == SCRN_GAME_STATE_TRANSITION_IN) {
+		f32 time_past = scrn->frame.timestamp - scrn->t;
+		f32 t         = clamp_f32(time_past / SCRN_TRANSITION_DURATION, 0.0f, 1.0f);
+		f32 alpha     = 1.0f - t;
+		g_pat(gfx_pattern_bayer_4x4(16 * alpha));
+		g_color(PRIM_MODE_BLACK);
+		g_rec_fill(0, 0, SYS_DISPLAY_W, SYS_DISPLAY_H);
+		g_pat(gfx_pattern_100());
+	}
+	if(scrn->transition_out) {
+		f32 time_past = scrn->frame.timestamp - scrn->transition_out_t;
+		f32 t         = clamp_f32(time_past / SCRN_TRANSITION_DURATION, 0.0f, 1.0f);
+		f32 alpha     = t;
+		g_pat(gfx_pattern_bayer_4x4(16 * alpha));
+		g_color(PRIM_MODE_BLACK);
+		g_rec_fill(0, 0, SYS_DISPLAY_W, SYS_DISPLAY_H);
+		g_pat(gfx_pattern_100());
+	}
 
 #if DEBUG
 	{
@@ -792,7 +825,9 @@ scrn_game_matches_vfx(struct scrn_game *scrn)
 static inline void
 scrn_game_exit(struct scrn_game *scrn, enum scrn_type value)
 {
-	scrn->exit_to = value;
+	scrn->transition_out   = true;
+	scrn->transition_out_t = scrn->frame.timestamp;
+	scrn->exit_to          = value;
 }
 
 static inline rec_i32

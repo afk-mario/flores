@@ -31,11 +31,13 @@ garden_load(struct garden *garden, v2_i32 dims, struct alloc alloc)
 		tex_clr(t, GFX_COL_CLEAR);
 		arr_push(garden->textures, t);
 	}
+	garden->is_loaded = true;
 }
 
 void
 garden_ini(struct garden *garden, struct alloc alloc, struct frame_info frame)
 {
+	dbg_assert(garden->is_loaded);
 	garden->flower_idx = 0;
 	mclr_array(garden->cells);
 	garden->flowers = arr_new(garden->flowers, GARDEN_FLOWERS_MAX + 1, alloc);

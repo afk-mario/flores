@@ -4,6 +4,7 @@
 #include "scrns/scrn-game/scrn-game-defs.h"
 #include "scrns/scrn-loading/scrn-loading-defs.h"
 #include "scrns/scrn-over/scrn-over-defs.h"
+#include "scrns/scrn-title/scrn-title-defs.h"
 #include "scrns/scrn-type.h"
 
 struct app {
@@ -23,6 +24,7 @@ struct app {
 	void (*drw)(struct app *app);
 
 	struct scrn_loading scrn_loading;
+	struct scrn_title scrn_title;
 	struct scrn_game scrn_game;
 	struct scrn_over scrn_over;
 };

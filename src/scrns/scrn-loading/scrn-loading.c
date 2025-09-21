@@ -198,7 +198,8 @@ scrn_loading_end(struct loading_state *state, f32 time_start, f32 time_max, void
 	g_mus_play(G_MUS_MAIN, true, true);
 
 #if DEBUG
-	app_set_scrn(app, SCRN_TYPE_GAME);
+	// app_set_scrn(app, SCRN_TYPE_GAME);
+	app_set_scrn(app, SCRN_TYPE_TITLE);
 #else
 	app_set_scrn(app, SCRN_TYPE_TITLE);
 #endif
