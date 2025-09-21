@@ -14,6 +14,12 @@ enum g_tex_id {
 	G_TEX_SHAPES,
 	G_TEX_ACORN,
 	G_TEX_ABSTRACT_SEEDS,
+	G_TEX_FLOWER_01,
+	G_TEX_FLOWER_02,
+	G_TEX_FLOWER_03,
+	G_TEX_FLOWER_04,
+	G_TEX_FLOWER_05,
+	G_TEX_FLOWER_06,
 
 	G_TEX_NUM_COUNT,
 };
@@ -24,6 +30,12 @@ static const str8 G_TEX_PATH_MAP[G_TEX_NUM_COUNT] = {
 	[G_TEX_SHAPES]         = str8_lit_comp("assets/imgs/shapes.tex"),
 	[G_TEX_ACORN]          = str8_lit_comp("assets/imgs/avellana.tex"),
 	[G_TEX_ABSTRACT_SEEDS] = str8_lit_comp("assets/imgs/abstract-seeds.tex"),
+	[G_TEX_FLOWER_01]      = str8_lit_comp("assets/imgs/flor-1.tex"),
+	[G_TEX_FLOWER_02]      = str8_lit_comp("assets/imgs/flor-2.tex"),
+	[G_TEX_FLOWER_03]      = str8_lit_comp("assets/imgs/flor-3.tex"),
+	[G_TEX_FLOWER_04]      = str8_lit_comp("assets/imgs/flor-4.tex"),
+	[G_TEX_FLOWER_05]      = str8_lit_comp("assets/imgs/flor-5.tex"),
+	[G_TEX_FLOWER_06]      = str8_lit_comp("assets/imgs/flor-6.tex"),
 };
 
 static i32 G_TEX_IDS[G_TEX_NUM_COUNT];

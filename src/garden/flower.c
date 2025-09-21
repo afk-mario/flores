@@ -1,14 +1,22 @@
 #include "flower.h"
 #include "base/mathfunc.h"
+#include "base/str.h"
 #include "base/types.h"
+#include "base/v2.h"
+#include "engine/debug-draw/debug-draw.h"
 #include "engine/gfx/gfx-defs.h"
+#include "engine/gfx/gfx.h"
 #include "garden/flower-data.h"
 #include "garden/garden-data.h"
 #include "globals/g-gfx.h"
+#include "globals/g-tex-refs.h"
 #include "lib/rndm.h"
+#include "sys/sys-sokol.h"
 
 #define FLOWER_ANGLE_DELTA 25
 #define FLOWER_ANGLE_START -90
+
+static inline void flower_bud_drw(struct flower *flower, i32 stage, i32 x, i32 y);
 
 static inline str8
 flower_generate(struct alloc alloc, struct flower_rules *rules, struct str8 axiom);
@@ -36,11 +44,11 @@ flower_upd(struct flower *flower, struct frame_info frame)
 	f32 wind_force             = (5 * DEG_TO_TURN);
 	f32 wind                   = sin_f32(timestamp - flower->timestamp) * wind_force;
 	f32 angle_start            = flower->start_angle_og;
-	flower->start_angle        = angle_start + wind;
+	flower->start_angle        = angle_start - wind;
 	// flower->length             = lerp(0, rules->length, t);
 	// flower->angle_delta          = lerp(0, rules->angle_delta, t) * DEG_TO_TURN;
 	tex_clr(flower->ctx.dst, GFX_COL_CLEAR);
-	flower_upd_tex(flower, t);
+	flower_upd_tex(flower, frame.alloc, t);
 }
 
 void
@@ -53,12 +61,14 @@ flower_drw(struct flower *flower, i32 x, i32 y)
 }
 
 void
-flower_type_set(struct flower *flower, enum block_type type, f32 timestamp)
+flower_type_set(struct flower *flower, enum block_type type, struct frame_info frame)
 {
 	struct flower_rules *rules = FLOWERS_RULES + type;
-	f32 len_rndm               = rndm_range_f32(NULL, -3.0, 3.0f);
-	f32 angle_delta_rndm       = rndm_range_f32(NULL, -10.0f, 10.0f);
-	f32 angle_start_rndm       = rndm_range_f32(NULL, -10.0f, 10.0f);
+	f32 len_rndm               = rndm_range_f32(NULL, -1.0, 2.0f);
+	f32 angle_delta_rndm       = rndm_range_f32(NULL, -2.0f, 2.0f);
+	f32 angle_start_rndm       = rndm_range_f32(NULL, -2.0f, 2.0f);
+	angle_start_rndm           = 0;
+	angle_delta_rndm           = 0;
 	flower->type               = type;
 	flower->iterations         = 1;
 	flower->axiom              = rules->axiom;
@@ -66,39 +76,40 @@ flower_type_set(struct flower *flower, enum block_type type, f32 timestamp)
 	flower->length             = rules->length + len_rndm;
 	flower->start_angle_og     = (FLOWER_ANGLE_START + angle_start_rndm) * DEG_TO_TURN;
 	flower->start_angle        = flower->start_angle_og;
-	flower->timestamp          = timestamp;
-	flower_reevaluate(flower);
+	flower->water              = 50;
+	flower->timestamp          = frame.timestamp;
+	flower_reevaluate(flower, frame);
 }
 
 void
-flower_iterations_add(struct flower *flower, i32 value, f32 timestamp)
+flower_iterations_add(struct flower *flower, i32 value, struct frame_info frame)
 {
-	flower_iterations_set(flower, flower->iterations + 1, timestamp);
+	flower_iterations_set(flower, flower->iterations + 1, frame);
 }
 
 void
-flower_iterations_sub(struct flower *flower, i32 value, f32 timestamp)
+flower_iterations_sub(struct flower *flower, i32 value, struct frame_info frame)
 {
-	flower_iterations_set(flower, flower->iterations - 1, timestamp);
+	flower_iterations_set(flower, flower->iterations - 1, frame);
 }
 
 void
-flower_iterations_max(struct flower *flower, f32 timestamp)
+flower_iterations_max(struct flower *flower, struct frame_info frame)
 {
 	struct flower_rules *rules = FLOWERS_RULES + flower->type;
-	flower_iterations_set(flower, rules->iterations_max, timestamp);
+	flower_iterations_set(flower, rules->iterations_max, frame);
 }
 
 void
-flower_iterations_set(struct flower *flower, i32 value, f32 timestamp)
+flower_iterations_set(struct flower *flower, i32 value, struct frame_info frame)
 {
 	struct flower_rules *rules = FLOWERS_RULES + flower->type;
 	flower->iterations         = clamp_i32(value, 0, rules->iterations_max);
-	flower_reevaluate(flower);
+	flower_reevaluate(flower, frame);
 }
 
 void
-flower_reevaluate(struct flower *flower)
+flower_reevaluate(struct flower *flower, struct frame_info frame)
 {
 	marena_reset(&flower->marena);
 	str8 next                  = flower->axiom;
@@ -110,7 +121,7 @@ flower_reevaluate(struct flower *flower)
 	flower->next = next;
 
 	tex_clr(flower->ctx.dst, GFX_COL_CLEAR);
-	flower_upd_tex(flower, 1.0f);
+	flower_upd_tex(flower, frame.alloc, 1.0f);
 }
 
 static inline str8
@@ -133,23 +144,33 @@ flower_generate(struct alloc alloc, struct flower_rules *rules, struct str8 axio
 }
 
 void
-flower_upd_tex(struct flower *flower, f32 t)
+flower_upd_tex(struct flower *flower, struct alloc scratch, f32 t)
 {
 	struct gfx_ctx old             = g_drw_ctx(flower->ctx);
 	i32 length                     = flower->length;
 	f32 angle_delta                = flower->angle_delta;
 	rec_i32 layout                 = {0, 0, flower->ctx.dst.w, flower->ctx.dst.h};
+	struct rndm *rndm              = &flower->rndm;
 	struct str8 next               = flower->next;
 	struct flower_state stack[100] = {0};
+	struct flower_bud buds[100]    = {0};
+	i32 bud_idx                    = 0;
 	i32 stack_ptr                  = 0;
+	v2_i32 start_p                 = {layout.x + (layout.w * 0.5f), .y = layout.y + layout.h};
 	stack[stack_ptr]               = (struct flower_state){
-					  .p.x   = layout.x + (layout.w * 0.5f),
-					  .p.y   = layout.y + (layout.h),
+					  .p.x   = start_p.x,
+					  .p.y   = start_p.y,
 					  .angle = flower->start_angle,
+					  .rot.s = sin_f32(flower->start_angle * TURN_TO_RAD),
+					  .rot.c = cos_f32(flower->start_angle * TURN_TO_RAD),
+
     };
 
+	rndm_seed(rndm, flower->timestamp);
+
 	g_pat(gfx_pattern_100());
-	g_color(PRIM_MODE_WHITE);
+	g_color(PRIM_MODE_BLACK);
+	g_spr_mode(SPR_MODE_COPY);
 	i32 count = next.size * t;
 	for(size i = 0; i < count; ++i) {
 		struct flower_state *state = stack + stack_ptr;
@@ -162,7 +183,10 @@ flower_upd_tex(struct flower *flower, f32 t)
 			g_lin(state->p.x, state->p.y, xb, yb);
 			state->p.x = xb;
 			state->p.y = yb;
-			if(nc != 'F' && nc != 'G' && nc != '[' && nc != 'X') {
+			// mark as a tip if next char is branch close or end of string
+			if(nc == ']' || nc == 0) {
+				buds[bud_idx] = (struct flower_bud){.water = 1, .x = state->p.x, .y = state->p.y};
+				bud_idx       = (bud_idx + 1) % ARRLEN(buds);
 			}
 
 		} break;
@@ -204,22 +228,74 @@ flower_upd_tex(struct flower *flower, f32 t)
 		} break;
 		case ']': {
 			dbg_assert(stack_ptr > 0);
-			// g_cir_fill(state->p.x, state->p.y, 3); // tip of branch
-			// debug_draw_cir_fill(state->p.x, state->p.y, 3);
 			stack_ptr--;
+			buds[bud_idx] = (struct flower_bud){.water = 1, .x = state->p.x, .y = state->p.y};
+			bud_idx       = (bud_idx + 1) % ARRLEN(buds);
+		} break;
+		case 'B': {
+			buds[bud_idx] = (struct flower_bud){.water = 1, .x = state->p.x, .y = state->p.y};
+			bud_idx       = (bud_idx + 1) % ARRLEN(buds);
 		} break;
 		case 'c': {
-			// g_pat(gfx_pattern_100());
 		} break;
 		case 'd': {
-			// g_pat(gfx_pattern_50());
 		} break;
 		case 'e': {
-			// g_pat(gfx_pattern_50());
 		} break;
 		default: {
 		} break;
 		}
 	}
+	{
+		i32 water_total = flower->water;
+		if(water_total > 0) {
+			while(water_total > 0) {
+				b32 one_empty = false;
+				for(size i = 0; i < (size)ARRLEN(buds); ++i) {
+					struct flower_bud *bud = buds + i;
+					if(bud->water == 0) { continue; }
+					if(bud->water > 3) { continue; }
+					if(water_total == 0) { break; }
+					i32 rnmd_water  = rndm_range_i32(rndm, 0, 3);
+					i32 water_need  = 4 - bud->water;
+					i32 water_value = min_i32(min_i32(rnmd_water, water_total), water_need);
+					bud->water += water_value;
+					water_total -= water_value;
+					if(bud->water < 4) {
+						one_empty = true;
+					}
+				}
+				if(!one_empty && water_total > 0) {
+					flower->is_full = true;
+					break;
+				}
+			}
+			for(size i = 0; i < (size)ARRLEN(buds); ++i) {
+				struct flower_bud *bud = buds + i;
+				if(bud->water < 2) { continue; }
+				flower_bud_drw(
+					flower,
+					bud->water - 2,
+					bud->x,
+					bud->y);
+			}
+		}
+	}
 	g_drw_ctx(old);
+}
+
+static inline void
+flower_bud_drw(struct flower *flower, i32 stage, i32 x, i32 y)
+{
+	i32 ref                = FLOWERS_TEX_MAP[flower->type];
+	i32 id                 = g_tex_refs_id_get(ref);
+	struct tex t           = asset_tex(id);
+	i32 cells              = t.w / t.h;
+	i32 frame              = stage % (cells - 1);
+	struct tex_rec tex_rec = asset_tex_rec(id, t.h * frame, 0, t.h, t.h);
+#if 1
+	g_spr_piv(tex_rec, x, y, 0, (v2){0.5f, 0.5f});
+#else
+	g_cir_fill(x, y, 3 + stage);
+#endif
 }

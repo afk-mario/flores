@@ -61,8 +61,13 @@ static inline void scrn_game_vfx_score(struct scrn_game *scrn, i32 x, i32 y, u32
 #define GAME_HUD_W  SYS_DISPLAY_W - (GAME_WALL_W * 2) - (BLOCK_SIZE * (BOARD_COLUMNS * 2)) - 2
 // #define BOARD_FULL
 
+#if DEBUG
 #define BOARD_PRESET    1
+#define GAME_TIME_SCALE 3.0f
+#else
+#define BOARD_PRESET    0
 #define GAME_TIME_SCALE 1.0f
+#endif
 
 void
 scrn_game_ini(struct app *app)
@@ -94,7 +99,7 @@ scrn_game_ini(struct app *app)
 	{
 		struct rec_i32 rec = scrn_game_get_garden_rec(scrn);
 		garden_load(&app->scrn_game.garden, (v2_i32){rec.w, rec.h}, ASSETS.alloc);
-		garden_ini(garden, alloc, timestamp);
+		garden_ini(garden, alloc, scrn->frame);
 	}
 	scrn->editor.type = BLOCK_TYPE_A;
 	scrn->piece       = (struct piece){0};
@@ -219,16 +224,16 @@ scrn_game_drw(struct app *app)
 	}
 
 	{
-		g_drw_offset(board_offset.x, board_offset.y);
-		debug_draw_set_offset(board_offset.x, board_offset.y);
-		scrn_game_drw_game(scrn);
-		vfxs_drw(&scrn->matches_vfx, scrn->frame);
-	}
-	{
 		g_drw_offset(0, 0);
 		debug_draw_set_offset(0, 0);
 		// debug_draw_rec_fill(REC_UNPACK(garden_rec));
 		garden_drw(garden, garden_rec, scrn->theme);
+	}
+	{
+		g_drw_offset(board_offset.x, board_offset.y);
+		debug_draw_set_offset(board_offset.x, board_offset.y);
+		scrn_game_drw_game(scrn);
+		vfxs_drw(&scrn->matches_vfx, scrn->frame);
 	}
 
 	debug_draw_set_offset(0, 0);
@@ -397,7 +402,7 @@ scrn_game_over_drw(struct scrn_game *scrn)
 static inline void
 scrn_game_drw_bg(struct scrn_game *scrn)
 {
-	g_color(PRIM_MODE_BLACK);
+	g_color(PRIM_MODE_WHITE);
 	g_rec_fill(0, 0, SYS_DISPLAY_W, SYS_DISPLAY_H);
 }
 
@@ -431,7 +436,7 @@ scrn_game_drw_hud(struct scrn_game *scrn)
 {
 	enum g_txt_style style = G_TXT_STYLE_HUD;
 	i32 hud_w              = GAME_HUD_W;
-	i32 hud_h              = SYS_DISPLAY_H - GAME_WALL_W;
+	i32 hud_h              = SYS_DISPLAY_H;
 	i32 margin             = 8;
 	rec_i32 root           = rec_i32_anchor(APP_SCRN_REC, (rec_i32){.w = hud_w, .h = hud_h}, (v2){0.5f, 0.5f});
 	rec_i32 inset          = rec_i32_inset_x(root, 2);
@@ -868,7 +873,7 @@ scrn_game_matches(struct scrn_game *scrn)
 			v2_i32 px     = board_idx_to_px(board, idx);
 			p.x           = p.x + (px.x + block_size * 0.5f);
 			p.y           = min_i32(px.y, p.y);
-			column_count[coords.y]++;
+			column_count[coords.x]++;
 		}
 		p.x       = p.x / group_count;
 		u32 score = (1 * (group_count - 3)) * scrn->chain;
@@ -880,7 +885,7 @@ scrn_game_matches(struct scrn_game *scrn)
 				column_with_more = i;
 			}
 		}
-		garden_seed_add(garden, column_with_more, type, timestamp);
+		// garden_seed_add(garden, column_with_more, type, timestamp);
 	}
 
 	if(matches.total > 0) {

@@ -34,8 +34,10 @@ garden_load(struct garden *garden, v2_i32 dims, struct alloc alloc)
 }
 
 void
-garden_ini(struct garden *garden, struct alloc alloc, f32 timestamp)
+garden_ini(struct garden *garden, struct alloc alloc, struct frame_info frame)
 {
+	garden->flower_idx = 0;
+	mclr_array(garden->cells);
 	garden->flowers = arr_new(garden->flowers, GARDEN_FLOWERS_MAX + 1, alloc);
 	arr_push(garden->flowers, (struct flower){0});
 	for(size i = 1; i < (size)arr_cap(garden->flowers); ++i) {
@@ -51,17 +53,24 @@ garden_ini(struct garden *garden, struct alloc alloc, f32 timestamp)
 		struct garden_cell *cell = garden->cells + i;
 		for(size j = 0; j < (size)ARRLEN(cell->handles); ++j) {
 			enum block_type type  = rndm_range_i32(NULL, BLOCK_TYPE_A, BLOCK_TYPE_F);
-			u16 handle            = garden_flower_spawn(garden, column, type, timestamp);
+			u16 handle            = garden_flower_spawn(garden, column, type, frame);
 			struct flower *flower = garden->flowers + handle;
-			flower_iterations_max(flower, timestamp);
+			flower_iterations_max(flower, frame);
 			cell->handles[j] = handle;
 		}
 	}
 #endif
+
+#if 1
+	enum block_type type  = BLOCK_TYPE_F;
+	u16 handle            = garden_flower_spawn(garden, 2, type, frame);
+	struct flower *flower = garden->flowers + handle;
+	flower_iterations_max(flower, frame);
+#endif
 }
 
 void
-garden_seed_add(struct garden *garden, i32 column, enum block_type type, f32 timestamp)
+garden_seed_add(struct garden *garden, i32 column, enum block_type type, struct frame_info frame)
 {
 	dbg_assert(type != BLOCK_TYPE_NONE);
 	dbg_assert(column < (size)(ARRLEN(garden->cells)));
@@ -72,7 +81,7 @@ garden_seed_add(struct garden *garden, i32 column, enum block_type type, f32 tim
 		struct flower *flower      = garden->flowers + handle;
 		struct flower_rules *rules = FLOWERS_RULES + flower->type;
 		if(flower->type == type && flower->iterations < rules->iterations_max) {
-			flower_iterations_add(flower, 1, timestamp);
+			flower_iterations_add(flower, 1, frame);
 			return;
 		} else {
 			// replace one of the flowers with a new one?
@@ -82,7 +91,7 @@ garden_seed_add(struct garden *garden, i32 column, enum block_type type, f32 tim
 	for(size i = 0; i < (size)ARRLEN(cell->handles); ++i) {
 		u16 handle = cell->handles[i];
 		if(handle == 0) {
-			cell->handles[i] = garden_flower_spawn(garden, column, type, timestamp);
+			cell->handles[i] = garden_flower_spawn(garden, column, type, frame);
 			return;
 		}
 	}
@@ -117,13 +126,13 @@ garden_drw(struct garden *garden, rec_i32 rec, enum game_theme theme)
 }
 
 u16
-garden_flower_spawn(struct garden *garden, i32 column, enum block_type type, f32 timestamp)
+garden_flower_spawn(struct garden *garden, i32 column, enum block_type type, struct frame_info frame)
 {
 	i32 block_size        = 28;
 	u16 res               = garden->flower_idx + 1;
 	struct flower *flower = garden->flowers + res;
 	flower->p.x           = (column * block_size) + (block_size * 0.5f) + rndm_range_i32(0, block_size * 0.25f, block_size * 0.25f);
-	flower_type_set(flower, type, timestamp);
+	flower_type_set(flower, type, frame);
 	garden->flower_idx = (garden->flower_idx + 1) % (arr_len(garden->flowers) - 1);
 	return res;
 }

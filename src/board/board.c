@@ -22,6 +22,7 @@ board_ini(struct board *board, f32 timestamp)
 	board->rows           = BOARD_ROWS;
 	board->block_size     = BLOCK_SIZE;
 	board->block_size_inv = 1.0f / (f32)BLOCK_SIZE;
+	board->falling_count  = 0;
 
 	mclr_array(board->blocks);
 	mclr_array(board->fallings);
@@ -67,7 +68,7 @@ board_drw(struct board *board, enum game_theme theme)
 		g_color(bg);
 		i32 x = 0;
 		i32 y = -1 * board->block_size;
-		i32 w = (board->columns * board->block_size) + 1;
+		i32 w = (board->columns + 1) * board->block_size;
 		i32 h = (board->rows + 1) * board->block_size;
 		g_rec_fill(x, y, w, h);
 		debug_draw_rec(x, y, w, h);

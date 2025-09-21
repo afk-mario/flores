@@ -4,11 +4,18 @@
 #include "base/types.h"
 #include "block/block-type.h"
 #include "engine/gfx/gfx.h"
+#include "lib/rndm.h"
 
 struct flower_state {
 	v2_i32 p;
 	f32 angle;
 	rot2 rot;
+};
+
+struct flower_bud {
+	i16 x;
+	i16 y;
+	u8 water;
 };
 
 struct flower_rules {
@@ -20,7 +27,10 @@ struct flower_rules {
 };
 
 struct flower {
+	struct rndm rndm;
+	b32 is_full;
 	v2_i32 p;
+	i32 water;
 	u8 iterations;
 	f32 length;
 	f32 angle_delta;
