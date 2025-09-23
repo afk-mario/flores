@@ -1,25 +1,19 @@
 #include "garden.h"
 #include "base/arr.h"
 #include "base/dbg.h"
-#include "base/marena.h"
 #include "base/mathfunc.h"
 #include "base/mem.h"
 #include "base/rec.h"
-#include "base/str.h"
 #include "base/types.h"
 #include "base/utils.h"
-#include "engine/debug-draw/debug-draw.h"
 #include "engine/gfx/gfx-defs.h"
 #include "engine/gfx/gfx.h"
 #include "engine/input.h"
-#include "garden/flower-data.h"
 #include "garden/flower.h"
-#include "garden/garden-data.h"
 #include "garden/garden-defs.h"
 #include "globals/g-gfx.h"
 #include "lib/rndm.h"
 #include "lib/tex/tex.h"
-#include "sys/sys.h"
 
 void
 garden_load(struct garden *garden, v2_i32 dims, struct alloc alloc)
@@ -49,7 +43,7 @@ garden_ini(struct garden *garden, struct alloc alloc, struct frame_info frame)
 		struct flower *flower = garden->flowers + i;
 		flower_ini(flower, alloc, garden->textures[i]);
 	}
-#if 0
+#if 1
 	for(size i = 0; i < (size)ARRLEN(garden->cells); ++i) {
 		i32 column               = i;
 		struct garden_cell *cell = garden->cells + i;

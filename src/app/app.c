@@ -81,7 +81,6 @@ app_tick(f32 dt)
 	TRACE_START(__func__);
 	g_dbg_clr();
 	inp_upd();
-	g_dbg_str(SCRN_TYPE_LABELS[APP.scrn]);
 	if(inp_key_just_pressed('b')) {
 		APP.debug_drw = APP.debug_drw ? false : true;
 	}

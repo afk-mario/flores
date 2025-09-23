@@ -186,9 +186,6 @@ scrn_game_upd(struct app *app, f32 dt)
 	struct board *board   = &scrn->board;
 	struct garden *garden = &scrn->garden;
 
-	g_dbg_str(SCRN_GAME_STATE_LABELS[scrn->state]);
-	// g_dbg_str(piece_to_str(piece, board, scratch));
-	// g_dbg_str(str8_fmt_push(scratch, "chain:%d", scrn->chain));
 	garden_upd(garden, scrn->frame);
 
 	if(scrn->transition_out) {
@@ -313,7 +310,7 @@ scrn_game_drw(struct app *app)
 	}
 
 #if DEBUG
-	{
+	if(scrn->state == SCRN_GAME_STATE_EDITOR) {
 		struct str_join params = {.sep = str8_lit(" ")};
 		struct str8_list list  = {0};
 		v2_i32 rel             = scrn_game_mouse_to_board(scrn);
@@ -766,7 +763,6 @@ scrn_game_collapse_upd(struct scrn_game *scrn)
 	struct alloc scratch    = frame.alloc;
 
 	str8 str = str8_fmt_push(scratch, "vfx:%d", scrn->matches_vfx.count);
-	g_dbg_str(str);
 
 	if(scrn->matches_vfx.count == 0) {
 		board_matches_clr(&scrn->board);
